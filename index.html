@@ -1,0 +1,2363 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>โรงงานนักประดิษฐ์ – วัตถุและวัสดุ</title>
+
+<style>
+/* =========================
+   ฟอนต์/ธีมพื้นฐาน
+   ========================= */
+@font-face{
+  font-family: 'MyGameFont';
+  src: url('image/THSarabunNew.woff2') format('woff2'),
+       url('image/THSarabunNew.woff') format('woff'),
+       url('image/THSarabunNew.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face{
+  font-family: 'MyGameFont';
+  src: url('image/THSarabunNewBold.woff2') format('woff2'),
+       url('image/THSarabunNewBold.woff') format('woff'),
+       url('image/THSarabunNewBold.ttf') format('truetype');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+html, body, button, input, select, textarea {
+  font-family: 'MyGameFont', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+:root{
+  --glass: rgba(0,0,0,.45);
+  --ok:#10b981; --bad:#ef4444;
+
+  /* ปรับตำแหน่ง/ขนาดวงกลมตัวเลือก 3 ปุ่มด้านบน */
+  --opt-top: 10vh;                 /* ระยะจากบน (แถวปุ่ม) */
+  --opt-size: clamp(120px, 18vw, 200px);
+  --opt-gap: 18vw;   /* ช่องว่างคงที่กว้างมาก */
+
+  /* ปรับข้อความคำถามด้านล่าง */
+  --q-bottom: 8vh;                 /* ระยะจากล่าง */
+  --q-font: clamp(50px, 10vw, 96px);
+  --q-slide-ms: 750ms;             /* เวลา slide ข้อความเข้า */
+  --q-offset-x: 22vw;              /* ระยะเริ่มเลื่อนนอกจอ (แนวนอน) */
+
+  --hud-top: 14px;
+  --safe-top: env(safe-area-inset-top,0px);
+}
+
+/* พื้นหลัง */
+html,body{ height:100%; margin:0 }
+body{
+  background:url("image/background2.png") center/cover no-repeat fixed;
+  overflow:hidden; color:#fff;
+}
+#game{ position:relative; width:100vw; height:100vh; overflow:hidden }
+
+/* =========================
+   HUD + นาฬิกา + คะแนน
+   ========================= */
+.hud{
+  position:fixed;
+  inset: calc(var(--safe-top) + var(--hud-top)) 5px auto 38px !important;
+  display:flex; align-items:center; gap:12px; justify-content:space-between;
+  pointer-events:none; z-index:40000;
+}
+body:not(.in-game):not(.prestart) .hud { display:none !important; }
+
+
+#clock.clock-pill{
+  position:fixed; top:14px; left:50%; transform:translateX(-50%);
+  z-index:16000; pointer-events:none;
+  --clock-size: 40px; font-size:var(--clock-size);
+  background:var(--glass); backdrop-filter:blur(6px); color:#fff;
+  font-weight:1000; line-height:1; border-radius:999px; padding:8px 16px;
+  box-shadow:0 4px 18px rgba(0,0,0,.25); text-shadow:0 3px 10px rgba(0,0,0,.55);
+}
+.pill{ background:var(--glass); backdrop-filter:blur(6px); padding:8px 12px; border-radius:999px; box-shadow:0 4px 18px rgba(0,0,0,.25) }
+.btn-mini{ pointer-events:auto; background:#1f2937; color:#fff; border:none; border-radius:12px; padding:8px 12px; font-weight:800; cursor:pointer; box-shadow:0 4px 18px rgba(0,0,0,.25) }
+.score-label{ 
+font-size:18px; 
+font-weight:900; 
+opacity:.95; margin:2px 0 4px; text-align:right }
+
+/* ปรับตำแหน่งคำว่า "คะแนน" */
+.score-label{
+  margin-right:16px;  /* เลื่อนออกจากกล่องทอง */
+  margin-top:-6px;    /* เลื่อนขึ้นเล็กน้อย */
+}
+
+
+.pill.gold{
+  --score-size: 46px; 
+border-radius: 12px; 
+padding:6px 8px; min-width: 
+calc(var(--score-size)*1.6);
+}
+.pill.gold .num{ 
+font-size:var(--score-size); 
+font-weight:1000; 
+letter-spacing:.5px 
+}
+
+/* จัดกึ่งกลางตัวเลขในกล่องทอง */
+.pill.gold{
+  display:flex;
+  justify-content:center;  /* กึ่งกลางแนวนอน */
+  align-items:center;      /* กึ่งกลางแนวตั้ง */
+  text-align:center;
+}
+.pill.gold .num{
+  display:block;
+  width:100%;
+}
+
+
+/* ย้ายปุ่ม HUD ไปมุมซ้าย/ขวาแน่นอน */
+.hud { position: initial !important; inset:auto !important; }
+.hud .left, .hud .right{
+  position:fixed !important; top:var(--hud-top) !important; z-index:50000; pointer-events:none;
+}
+.hud .left { left: 16px !important; }
+.hud .right{ right:16px !important; }
+.hud .btn-mini{ pointer-events:auto }
+
+/* =========================
+   Welcome / Landing
+   ========================= */
+#welcome{ position:fixed; inset:0; background:url("image/welcome.png") center/cover no-repeat fixed; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; z-index:25000; transition:opacity .3s ease }
+#welcome.hide{ opacity:0; pointer-events:none; visibility:hidden }
+#welcome .brand{ width:min(90vw,1000px); margin-bottom:100px; display:flex; justify-content:center }
+#welcome .brand img{ width:130%; height:auto; display:block; filter:drop-shadow(0 6px 18px rgba(0,0,0,.45)); animation:pulse 3s infinite ease-in-out }
+#welcome #enterBtn{ padding:12px 28px; font-size:clamp(22px,4vw,36px); font-weight:1000; border:0; border-radius:16px; color:#fff; background:rgba(0,0,0,.55); box-shadow:0 10px 28px rgba(0,0,0,.35); cursor:pointer; backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.18) }
+@keyframes pulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+
+#landing{ position:fixed; inset:0; display:flex; flex-direction:column; gap:22px; align-items:center; justify-content:center; background:url("image/background2.png") center/cover no-repeat fixed; z-index:20000; transition:opacity .3s ease }
+#landing.hide{ opacity:0; pointer-events:none; visibility:hidden }
+#landing .brand{ width:min(92vw,1100px) }
+#landing .brand img{ width:100%; height:auto; display:block; filter:drop-shadow(0 10px 30px rgba(0,0,0,.6)) }
+.level-menu{ display:flex; flex-direction:column; gap:14px; width:min(92vw,640px) }
+.levelBtn{ width:100%; padding:10px 16px; font-size:clamp(20px,4vw,34px); font-weight:1000; border:0; border-radius:14px; color:#fff; background:rgba(0,0,0,.55); box-shadow:0 10px 28px rgba(0,0,0,.35); cursor:pointer; text-align:center; border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(6px) }
+
+/* =========================
+   หน้าสตาร์ท / นับถอยหลัง
+   ========================= */
+#startScreen{ position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.9); z-index:30000; text-align:center; padding:24px }
+#startTitle{ font-size:clamp(26px,5vw,48px); font-weight:900; margin-bottom:10px }
+#startBtn{ margin-top:12px; padding:10px 18px; border:0; border-radius:12px; font-weight:800; cursor:pointer; background:#1f2937; color:#fff }
+#countdown{ display:none; font-size:clamp(56px,12vw,120px); font-weight:1000; line-height:1; margin-top:8px }
+
+/* =========================
+   โครงสร้างคำถาม/คำตอบแบบใหม่
+   ========================= */
+/* แถวปุ่ม 3 วงกลมด้านบน */
+#choicesRow{
+  position:fixed; left:50%; transform:translateX(-50%);
+  top:var(--opt-top); display:flex; gap:var(--opt-gap);
+  z-index:12000; pointer-events:auto;
+}
+
+.option.circle{
+  width:var(--opt-size); height:var(--opt-size);
+  border-radius:50%;
+  /* เพิ่มเส้นขอบเข้มกว่าสีหลักเล็กน้อย */
+  border:10px solid rgba(0,0,0,0.25);
+  background:
+    radial-gradient(35% 35% at 30% 30%, rgba(255,255,255,.18), rgba(255,255,255,0) 60%) padding-box,
+    var(--ring, linear-gradient(130deg,#999,#666)) border-box;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);
+  display:grid; place-items:center; cursor:pointer; user-select:none;
+  overflow:hidden;
+}
+
+.option.circle img{ width:80%; height:80%; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.45)) }
+
+/* เข้า: slide-in จากด้านบนทีละปุ่ม */
+.option.circle.pre-in{ opacity:0; transform:translateY(-40px); }
+.option.circle.go-in{ opacity:1; transform:translateY(0); transition: transform 600ms cubic-bezier(.2,.9,.2,1), opacity 600ms; }
+
+/* กล่องครอบตัวเลือก 1 ชิ้น (รูปวงกลม + แคปชันด้านล่าง) */
+.option-wrap{
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  gap:8px;
+  position:relative;
+}
+
+.option-wrap .opt-cap {
+  font-size: var(--cap-font, clamp(16px, 2.8vw, 24px));
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.45;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0,0,0,.6);
+  transform: translateY(var(--cap-offset-y, 0px));
+  max-width: none;
+  white-space: nowrap;   /* อยู่บรรทัดเดียว */
+  overflow: visible;     /* ไม่ตัดหัว-หางสระ */
+  word-break: keep-all;
+}
+
+
+
+/* ออก: ปุ่มถูกเลือก → ขยายแล้วหดจนหาย */
+.option.circle.pick-pop{ animation: pickPop 620ms ease forwards; }
+@keyframes pickPop{ 0%{transform:scale(1)} 45%{transform:scale(1.15)} 100%{transform:scale(.2); opacity:0} }
+
+/* ออก: ปุ่มไม่ได้เลือก → slide-out ขึ้นด้านบน */
+.option.circle.slide-up-out{ animation: slideUpOut 560ms ease forwards; }
+@keyframes slideUpOut{ to{ transform:translateY(-60px); opacity:0 } }
+/* ให้ทั้งกล่องคำตอบ (วงกลม+แคปชัน) เป็นตัวอนิเมต */
+.option-wrap{ will-change: transform, opacity; }
+
+/* ถูกเลือก = ป๊อปขึ้นนิดนึงแล้วยุบจางหาย (วง+แคปชันพร้อมกัน) */
+.option-wrap.is-chosen .option.circle{ animation: circlePop .52s cubic-bezier(.2,.9,.2,1) forwards; }
+.option-wrap.is-chosen .opt-cap     { animation: capFadeUp .52s ease forwards; }
+
+/* ไม่ถูกเลือก = เฟดขึ้นเบา ๆ แล้วหาย (วง+แคปชันพร้อมกัน) */
+.option-wrap.is-faded  .option.circle{ animation: circleFadeUp .42s ease forwards; }
+.option-wrap.is-faded  .opt-cap      { animation: capFadeUp .42s ease forwards; }
+
+/* คีย์เฟรมที่ใช้ */
+@keyframes circlePop{
+  0%{ transform:scale(1); opacity:1 }
+  35%{ transform:scale(1.12) }
+  100%{ transform:scale(.85); opacity:0 }
+}
+@keyframes circleFadeUp{ to{ transform:translateY(-20px); opacity:0 } }
+@keyframes capFadeUp{   to{ transform:translateY(-24px); opacity:0 } }
+/* จบรอบ: ย่อทั้งกล่องแล้วค่อยหาย (กันชนกับสถานะอื่นๆ) */
+.option-wrap.is-vanish{
+  animation: wrapShrinkOut var(--vanish-ms, 420ms) ease forwards;
+}
+.option-wrap.is-vanish .option.circle{
+  animation: circleShrinkOut var(--vanish-ms, 420ms) ease forwards;
+}
+.option-wrap.is-vanish .opt-cap{
+  animation: capFadeUp var(--vanish-ms, 420ms) ease forwards;
+}
+
+@keyframes wrapShrinkOut{
+  to{ transform: scale(.88); opacity:.0; }
+}
+@keyframes circleShrinkOut{
+  to{ transform: scale(.82); opacity:0; }
+}
+
+
+/* แคปชันหายตามวง */
+@keyframes capFadeUp { to { transform: translateY(-30px); opacity: 0; } }
+.option-wrap.faded .opt-cap{ animation: capFadeUp 560ms ease forwards; }
+.option-wrap.chosen .opt-cap{ animation: capFadeUp 620ms ease forwards; }
+
+/* กล่องคำถามด้านล่าง: สไลด์แนวนอนเข้ามา */
+/* กล่องคำถามด้านล่าง: วิ่งแนวนอนจากขวา -> ซ้าย */
+#questionBox{
+  position:fixed;
+  left:0; right:0; bottom:var(--q-bottom);
+  width:100vw; overflow:hidden; pointer-events:none;
+  z-index:11000;
+  text-align:left; /* ไม่บังคับกลาง เพราะเราจะเลื่อนเอง */
+  white-space:nowrap;
+  /* ขนาดตัวหนังสือยังคงใช้ตัวแปรเดิม */
+  font-size:var(--q-font); font-weight:1000;
+  text-shadow:0 4px 12px rgba(0,0,0,.8);
+}
+
+#questionBox .mq{
+  display:inline-block;
+  padding-inline: 4vw;
+  will-change: transform, opacity;
+  /* ป้องกันเฟรมแรกโผล่มุมซ้ายล่าง */
+  opacity: 0;
+  transform: translateX(100vw);
+  /* ยังไม่ผูก animation ตรงนี้ รอให้ JS สั่งตอนพร้อม */
+}
+#questionBox .mq.run{
+  opacity: 1;
+  animation-name: qScrollLeft;
+  animation-timing-function: linear;
+  animation-iteration-count: 1; /* วิ่งครั้งเดียวตามที่ต้องการ */
+}
+
+/* keyframes วิ่งจากนอกจอขวา ไปจนพ้นซ้าย */
+@keyframes qScrollLeft{
+  from{ transform: translateX(100vw); }
+  to  { transform: translateX(-100%); }
+}
+
+/* เร่งข้อความออกซ้ายพร้อมจาง (ใช้ตอนผู้เล่นเลือกคำตอบ) */
+@keyframes qBoostOut{
+  to { transform: translateX(-120%); opacity: 0; }
+}
+
+/* เร่งข้อความคำถามให้ออกซ้ายพร้อมจาง (เรียกตอนผู้เล่นกดเลือก) */
+@keyframes qBoostOut{ to{ transform:translateX(-120%); opacity:0 } }
+
+/* (ล้างคลาสเก่า ถ้ายังมีติดอยู่จากรอบก่อน) */
+/* === ตราประดับใต้คำถาม === */
+:root{
+  --decor-w: 104vw; /* ปรับความกว้าง */
+  --decor-bottom: -12vh;                /* ระยะจากขอบล่าง */
+  --cap-font: clamp(24px, 4.2vw, 36px); /* ← เพิ่มบรรทัดนี้เพื่อคุมขนาดแคปชัน */
+}
+
+#qDecor{
+  position: fixed;
+  left: 50%;
+  bottom: var(--decor-bottom);
+  width: var(--decor-w);
+  height: auto;
+  transform: translateX(-50%);
+  /* เดิมเป็น pointer-events:none; เปลี่ยนเป็นคลิกได้ */
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 10950;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
+}
+
+/* ปิดการคลิก qDecor แต่คงเรืองแสงได้ */
+#qDecor{
+  pointer-events: none; /* ไม่รับคลิก แต่ยังแสดงและเรืองแสงได้ */
+}
+
+
+/* สถานะเชิญชวนให้กดเพื่อไปต่อ */
+#qDecor.arm-next{
+  animation: none !important;
+  filter: drop-shadow(0 0 18px rgba(255, 220, 0, .75));
+}
+@keyframes pulseNext{
+  0%,100%{ transform: translateX(-50%) scale(1.0); }
+  50%    { transform: translateX(-50%) scale(1.06); }
+}
+
+/* ปุ่มลัดสี่เหลี่ยม: ไปข้อถัดไป (ทำหน้าที่เดียวกับ object0) */
+:root{
+  /* ปรับตำแหน่ง/ขนาดได้ตามต้องการ */
+  --fast-left: 0vw;   /* ระยะจากซ้าย */
+  --fast-top: 88vh;   /* ระยะจากบน */
+  --fast-w: 1840px;    /* ความกว้าง */
+  --fast-h: 130px;     /* ความสูง */
+}
+#fastNext{
+  position: fixed;
+  left: var(--fast-left);
+  top: var(--fast-top);
+  width: var(--fast-w);
+  height: var(--fast-h);
+  display: none;               /* จะแสดงเมื่อมีคลาส .show */
+  place-items: center;
+  background: rgba(0,0,0,.5);
+  border: 3px solid rgba(255,255,255,.7);
+  border-radius: 14px;
+  color:#fff;
+  font-weight: 1000;
+  z-index: 10960;
+  cursor: pointer;
+  user-select: none;
+  pointer-events: auto;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
+}
+
+#fastNext {
+  opacity: 0;          /* ทำให้โปร่งใส */
+  pointer-events: auto; /* ยังคลิกได้ (หากต้องการให้คลิกได้) */
+}
+
+#fastNext.show{ display: grid; }
+#fastNext.arm-next{ animation: none; } /* ให้อยู่นิ่งๆ */
+
+#questionBox.pre-x, #questionBox.go-x{ opacity:1; transform:none; transition:none; }
+
+
+/* ภาพประกอบ (ถ้าอยากแสดงเสริม — ซ่อนไว้ก่อน) */
+#qImg{ display:none }
+
+/* เอฟเฟกต์คะแนนลอย */
+.fly-score{
+  position:fixed; left:50%; top:50%;
+  font-weight:1000; font-size:clamp(28px,4vw,54px);
+  transform:translate(-50%,-50%); pointer-events:none; z-index:20000; opacity:0;
+  animation:flyUp 900ms ease-out forwards; text-shadow:0 4px 14px rgba(0,0,0,.45);
+}
+
+/* อีโมจิกลางจอ (เฟดเข้า–ค้างสั้นๆ–เฟดออก) */
+#emojiBurst{
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(0.92);
+  font-size: var(--emoji-size, 120px);   /* ← ปรับขนาดได้ */
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 60001;                        /* สูงกว่าแฟลชสี */
+}
+#emojiBurst.on{
+  animation: emojiFade var(--emoji-ms, 1000ms) ease-in-out forwards; /* ← ปรับเวลาได้ */
+}
+@keyframes emojiFade{
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.00); }
+  85%  { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); }
+}
+
+.fly-score.ok{ color:#10b981 } .fly-score.bad{ color:#ef4444 }
+@keyframes flyUp{
+  0%{ opacity:0; transform:translate(-50%,-40px) scale(.96) }
+  15%{ opacity:1; transform:translate(-50%,-50%) scale(1) }
+  100%{ opacity:0; transform:translate(-50%,-110px) scale(1.06) }
+}
+
+
+
+/* ปุ่ม Mute/Fullscreen */
+#muteBtn,#fsBtn{
+  position:fixed; right:12px; width:44px; height:44px; border-radius:999px;
+  background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.3);
+  color:#fff; font-size:18px; display:grid; place-items:center; cursor:pointer; z-index:50000;
+}
+#muteBtn{ bottom:12px } #fsBtn{ bottom:62px }
+
+
+/* =========================
+   หน้า “สรุปคะแนน”
+   ========================= */
+#overlay{ visibility:hidden; opacity:0; transition:.25s; position:fixed; inset:0; display:grid; place-items:center; background:rgba(0,0,0,.55); z-index:9999 }
+.result-panel{
+  --panel-bg: rgba(20,20,20,.92);
+  background:var(--panel-bg);
+  border:1px solid rgba(255,255,255,.12);
+  padding: clamp(20px, 4vw, 32px);
+  border-radius: 20px;
+  width: min(92vw, 640px);
+  display:grid; gap:14px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.55); backdrop-filter: blur(6px);
+}
+.result-title{ margin:0; font-weight:1000; font-size:clamp(28px,4.5vw,44px) }
+.badge{ font-size: clamp(56px, 10vw, 120px); line-height:1; filter: drop-shadow(0 8px 24px rgba(0,0,0,.45)) }
+.result-metrics{ display:grid; gap:12px }
+.metric{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:12px; box-shadow:0 8px 24px rgba(0,0,0,.25) inset }
+.metric .label{ opacity:.9 } .metric .value{ font-size:clamp(28px,5.5vw,52px); font-weight:1000 }
+.result-actions{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap }
+.btn{ appearance:none; border:none; border-radius:14px; padding:12px 18px; font-weight:900; font-size:clamp(16px,2.8vw,20px); cursor:pointer; box-shadow:0 10px 28px rgba(0,0,0,.35) }
+.btn.strong{ color:#fff; background:linear-gradient(180deg,#3b82f6,#1d4ed8); border:1px solid rgba(255,255,255,.15) }
+.btn.ghost{ color:#fff; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18) }
+
+/* =========================
+   กล้อง/แคนวาส AR
+   ========================= */
+#cameraMirror{ position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; transform:scaleX(-1); z-index:1; display:none; background:#000 }
+#camCanvas{ position:fixed; inset:0; width:100vw; height:100vh; z-index:2; pointer-events:none; display:none }
+#game{ z-index:3; position:relative }
+
+/* มุมภาพประดับ (ถ้ามีไฟล์) */
+body::after{ content:""; position:fixed; top:0; left:0; width:220px; height:220px; background:url("image/button1.png") no-repeat left top/contain; pointer-events:none; z-index:10000 }
+body::before{ content:""; position:fixed; top:0; right:0; width:200px; height:200px; background:url("image/button2.png") no-repeat right top/contain; pointer-events:none; z-index:10000 }
+
+:root{
+  --flash-ok:  rgba(16,185,129,.6);  /* เขียว */
+  --flash-bad: rgba(239,68,68,.6);   /* แดง  */
+  --flash-fade-ms: 120ms;            /* ความเร็วเฟดเข้า/ออก */
+}
+
+/* แผ่นทับทั้งจอสำหรับแฟลช */
+#flashOverlay{
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 60000;           /* สูงกว่า HUD/เกมทั้งหมด */
+  transition: opacity var(--flash-fade-ms) linear;
+  will-change: opacity;     /* ช่วยให้ลื่น */
+}
+#flashOverlay.on{ opacity: 1; }
+
+#bgLayer {
+  position: fixed;
+  inset: 0;
+  background: url("image/background2.png") center/cover no-repeat;
+  z-index: 1000;           /* อยู่เหนือพื้นหลังเกม */
+}
+
+#banner2,
+#enterBtn {
+  position: relative;
+  z-index: 2000;           /* อยู่เหนือ background2 */
+}
+
+/* ให้ bgLayer โผล่เฉพาะตอนยังไม่เข้าเกมเท่านั้น */
+body.in-game #bgLayer {
+  display: none !important;
+}
+
+
+
+/* ======= พรีโหลด ======= */
+#preloadOverlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#000c; color:#fff; z-index:99999; flex-direction:column; gap:12px; font-weight:900 }
+</style>
+</head>
+<body>
+
+<!-- ==== AR Mirror ==== -->
+<video id="cameraMirror" playsinline muted></video>
+<canvas id="camCanvas"></canvas>
+
+<div id="game" aria-label="สนามเกม">
+  <div id="choicesRow" aria-label="ตัวเลือกคำตอบ 3 ปุ่ม"></div>
+  <div id="questionBox" aria-live="polite"></div>
+    <img id="qDecor" src="objects2/object0.png" alt="ตกแต่งใต้คำถาม">
+  <img id="qImg" alt="ภาพประกอบ" />
+  <!-- ปุ่มลัดสี่เหลี่ยม: ไปข้อถัดไป -->
+  <div id="fastNext" role="button" aria-label="ไปข้อถัดไป">NEXT</div>
+</div>
+
+<!-- ===== Welcome ===== -->
+<div id="welcome" role="dialog" aria-modal="true">
+  <div class="brand"><img src="image/banner2.png" alt="โรงงานนักประดิษฐ์"></div>
+  <button id="enterBtn">เข้าสู่เกม</button>
+</div>
+
+<!-- ===== Landing ===== -->
+<div id="landing" role="dialog" aria-modal="true" class="hide">
+  <div class="brand"><img src="image/banner2.png" alt="โรงงานนักประดิษฐ์"></div>
+  <div class="level-menu">
+    <button class="levelBtn" data-level="3">สมบัติทางกายภาพของวัสดุ ด่านที่ 1 </button>
+       <button class="levelBtn" data-level="4">สมบัติทางกายภาพของวัสดุ ด่านที่ 2</button>
+    <button class="levelBtn" id="guideBtn">กติกาการเล่น 📖</button>
+  </div>
+</div>
+
+<div id="bgLayer"></div>
+
+<!-- ===== Start / Countdown ===== -->
+<div id="startScreen">
+  <div id="startTitle">ภารกิจ : เลือกคำตอบให้ตรงกับโจทย์</div>
+  <button id="startBtn">เริ่ม</button>
+  <div id="countdown">3</div>
+</div>
+
+<!-- ===== Guide ===== -->
+<div id="guideScreen" style="display:none; position:fixed; inset:0; align-items:center; justify-content:center; background:url('image/background2.png') center/cover no-repeat; z-index:20001">
+  <div class="guide-wrap" style="width:min(95vw, 1200px); max-height:92vh; display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center">
+    <img src="image/guide.png" alt="คู่มือเกม" style="width:100%; height:auto; max-height:92vh; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.55); display:block">
+    <button id="guideBack" class="btn-mini">เมนูหลัก</button>
+  </div>
+</div>
+
+<!-- ===== HUD ===== -->
+<div class="hud">
+  <div class="left">
+    <div class="stack">
+      <div style="display:flex; gap:8px;">
+        <button id="quickRestart" class="btn-mini">หน้าหลัก</button>
+        <button id="pauseBtn" class="btn-mini">⏸ หยุด</button>
+        <button id="camBtn" class="btn-mini">📷: ปิด</button>
+      </div>
+    </div>
+  </div>
+  <div class="right">
+    <div class="stack" style="align-items:flex-end">
+      <div class="score-label">คะแนน</div>
+      <div id="goldWrap" class="pill gold" aria-live="polite"><span class="num">0</span></div>
+    </div>
+  </div>
+</div>
+<div id="clock" class="clock-pill">02:00</div>
+
+<!-- ===== Overlay สรุปคะแนน ===== -->
+<div id="overlay">
+  <div class="result-panel">
+    <div class="badge" id="scoreBadge" aria-hidden="true">🏆</div>
+    <h1 class="result-title" id="endTitle">หมดเวลา</h1>
+    <div class="result-metrics">
+      <div class="metric">
+        <div class="label">คะแนน</div>
+        <div class="value"><b id="finalScore">0</b></div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="btn strong" id="restartBtn">เริ่มใหม่</button>
+      <button class="btn ghost" id="selectLevelBtn">กลับสู่หน้าหลัก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== เสียง ===== -->
+<audio id="hitSound" preload="auto" src="image/audio1.mp3"></audio>
+<audio id="winSound" preload="auto" src="image/win2.mp3"></audio>
+<audio id="bgm" preload="auto" loop src="image/bgm3.mp3"></audio>
+<audio id="selectSound" preload="auto" src="image/select.mp3"></audio>
+<audio id="wrongSound" preload="auto" src="image/wrong.mp3"></audio>
+<audio id="beltSound" preload="auto" src="image/belt.mp3"></audio>
+
+
+
+<!-- ===== ปุ่ม Mute / Fullscreen ===== -->
+<button id="muteBtn" aria-pressed="false" title="Mute / Unmute">🔊</button>
+<button id="fsBtn" aria-pressed="false" title="เข้าสู่โหมดเต็มจอ">⛶</button>
+
+<!-- ===== ควบคุม Mute ===== -->
+<script>
+
+(function(){
+  const muteBtn = document.getElementById('muteBtn');
+  const bgm = document.getElementById('bgm');  // ← เพิ่ม
+  if(!muteBtn || !bgm) return;
+  let isMuted = false;
+  function applyMute(m){
+    isMuted = !!m;
+    bgm.muted = isMuted;                      // ← ปิดเฉพาะ bgm
+    if(isMuted){ bgm.setAttribute('muted',''); }
+    else       { bgm.removeAttribute('muted'); }
+
+    muteBtn.setAttribute('aria-pressed', String(isMuted));
+    muteBtn.textContent = isMuted ? '🔇' : '🔊';
+  }
+  muteBtn.addEventListener('click', () => applyMute(!isMuted));
+})();
+</script>
+
+<!-- ===== ควบคุม Fullscreen ===== -->
+<script>
+(function(){
+  const fsBtn = document.getElementById('fsBtn');
+  if (!fsBtn) return;
+  function fsEnabled(){ return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled }
+  function isFull(){ return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement }
+  function requestFS(){ const el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen)?.call(el) }
+  function exitFS(){ (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen)?.call(document) }
+  function render(){ const on=!!isFull(); fsBtn.setAttribute('aria-pressed', String(on)); fsBtn.title = on ? 'ออกจากโหมดเต็มจอ' : 'เข้าสู่โหมดเต็มจอ'; fsBtn.textContent = on ? '🗗' : '⛶' }
+  if (!fsEnabled()){ fsBtn.style.display='none'; return }
+  fsBtn.addEventListener('click', () => { if(isFull()) exitFS(); else requestFS() });
+  document.addEventListener('fullscreenchange', render);
+  document.addEventListener('webkitfullscreenchange', render);
+  document.addEventListener('msfullscreenchange', render);
+  render();
+})();
+</script>
+
+<!-- ===== ระบบเกมหลัก (แนววัสดุ–วัตถุ) ===== -->
+<script>
+(()=>{
+// =========================
+// สถานะ/ตัวแปรหลัก
+// =========================
+window.__ALL_IMAGES_READY__ = false;
+window.currentLevel = 1; // 1: ถามวัสดุ → เลือกวัตถุ, 2: ถามวัตถุ → เลือกวัสดุ
+
+const GAME_DURATION_MS = 120000; // 2 นาที
+let gameTimerId = null, gameEndAt = 0, remainingMs = GAME_DURATION_MS;
+let running=false, ended=true, paused=false;
+let awaitingContinue=false; // พร้อมรอการกด object0 เพื่อปล่อยโจทย์ถัดไป
+let score=0, round=0, awaitingAnswer=false;
+// สำหรับด่าน 3 (หลายคำตอบ)
+let remainingCorrect = new Set();
+let __multiCorrectSet = new Set();
+
+
+// DOM
+const game = document.getElementById('game');
+const choicesRow = document.getElementById('choicesRow');
+const qBox = document.getElementById('questionBox');
+const qDecor = document.getElementById('qDecor');
+const fastNext = document.getElementById('fastNext');
+
+fastNext?.addEventListener('click', ()=>{
+  if (ended || !awaitingContinue) return;
+  awaitingContinue = false;
+  syncFastNextUI(); // ซ่อนสถานะ “พร้อมไปต่อ”
+  if (beltSound) { try{ beltSound.currentTime = 0; beltSound.muted = isGlobalMuted(); beltSound.play?.(); }catch(_){} }
+  nextRound();
+});
+
+
+/* จัดวาง qDecor ให้อยู่กึ่งกลางใต้กล่องคำถาม (ไม่ใช่ตามตัววิ่ง) */
+function positionDecorUnderQuestion(){
+  if(!qDecor) return;
+  const r = qBox.getBoundingClientRect();
+  const offsetX = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--decor-offset-x')
+      || '0'
+  ) || 0;
+
+  // วางกึ่งกลางตามกรอบของกล่องคำถาม
+  const centerX = r.left + (r.width/2) + offsetX;
+  // ใช้ left เป็นพิกัดจริง (ไม่ใช้ transform อีก เพื่อให้ควบคุมแม่นยำ)
+  qDecor.style.transform = 'translateX(0)';
+  qDecor.style.left = Math.round(centerX - (qDecor.offsetWidth/2)) + 'px';
+  // bottom ใช้จากตัวแปร CSS อยู่แล้ว
+}
+
+function syncFastNextUI(){
+  if (awaitingContinue && !ended){
+    fastNext?.classList.add('show','arm-next');
+    qDecor?.classList.add('arm-next');
+  }else{
+    fastNext?.classList.remove('show','arm-next');
+    qDecor?.classList.remove('arm-next');
+  }
+}
+
+window.addEventListener('resize', positionDecorUnderQuestion);
+window.addEventListener('load', positionDecorUnderQuestion);
+
+const qImg = document.getElementById('qImg');
+const overlay = document.getElementById('overlay');
+const finalScoreEl = document.getElementById('finalScore');
+const restartBtn = document.getElementById('restartBtn');
+const selectLevelBtn = document.getElementById('selectLevelBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const goldWrap = document.getElementById('goldWrap');
+const clockEl = document.getElementById('clock');
+
+// ===== ตั้งข้อความคำถามแบบวิ่งแนวนอน =====
+// ===== ตั้งข้อความคำถามแบบวิ่งแนวนอน =====
+function setQuestionMarquee(text){
+  qBox.textContent = '';
+  const span = document.createElement('span');
+  span.className = 'mq';
+  span.textContent = String(text || '').trim();
+  qBox.appendChild(span);
+
+  const speedPxPerSec = 120;
+
+  requestAnimationFrame(() => {
+    const textW = span.getBoundingClientRect().width || 0;
+    const viewW = innerWidth || qBox.clientWidth || 0;
+    const distance = textW + viewW;
+    const durSec = distance / speedPxPerSec;
+
+span.style.animationDuration = durSec + 's';
+span.classList.remove('run');  // กันค่าจากรอบก่อน
+void span.offsetWidth;         // reflow ให้แน่ใจว่า opacity/transform ถูกใช้ก่อน
+span.classList.add('run');     // ค่อย “เริ่ม” แอนิเมชันเมื่อพร้อม
+
+// จับเวอร์ชันโทเคนไว้ กัน callback เก่า
+const myTok = __mqToken;
+
+span.addEventListener('animationend', () => {
+  // ถ้าโทเคนไม่ตรง แสดงว่าโดน stop/เริ่มใหม่ไปแล้ว → ไม่ทำงานซ้ำ
+  if (myTok !== __mqToken) return;
+
+  if (!ended) {
+    awaitingAnswer = false;
+    // ฆ่าตัววิ่งให้ขาด ไม่ให้มีโอกาสเด้งกลับ
+    stopMarquee();
+    // เล่นเอฟเฟกต์ย่อเล็กลงแล้วหายกับ “ทุกช้อยส์”
+    vanishAllChoices(1200); // ← ปรับความเร็วได้ เช่น 360 / 520 ms
+    qBox.textContent = ''; // กันเหลือเศษข้อความ
+    awaitingContinue = true;
+    qDecor?.classList.add('arm-next');
+    syncFastNextUI();
+  }
+}, { once: true });
+
+
+  });
+}
+
+// เร่งข้อความคำถามให้พุ่งออกซ้ายอย่างไว
+function boostQuestionOutFast(ms=280){
+  const span = qBox.querySelector('.mq');
+  if(!span) return;
+
+  const cs = getComputedStyle(span);
+  let tx = 0;
+  const m = cs.transform || cs.webkitTransform || 'none';
+  if (m && m !== 'none') {
+    const mm = m.match(/matrix\(([^)]+)\)/);
+    if (mm) {
+      const parts = mm[1].split(',').map(parseFloat);
+      tx = parts[4] || 0; // a,b,c,d, tx, ty
+    }
+  }
+
+  span.style.animation = 'none';
+  span.style.willChange = 'transform, opacity';
+  span.style.transform = `translateX(${tx}px)`;
+  span.getBoundingClientRect(); // reflow
+
+  const r  = span.getBoundingClientRect();
+  const pr = qBox.getBoundingClientRect();
+  const delta = (pr.left - r.right) - 20; // เผื่อเลยซ้าย 20px
+
+  span.style.transition = `transform ${ms}ms linear, opacity ${ms}ms linear`;
+  span.style.transform  = `translateX(${tx + delta}px)`;
+  span.style.opacity    = '0.2';
+
+  span.addEventListener('transitionend', () => { span.remove(); }, { once:true });
+}
+
+
+// เสียง
+const hitSound = document.getElementById('hitSound');
+const winSound = document.getElementById('winSound');
+const bgm = document.getElementById('bgm');
+const selectSound = document.getElementById('selectSound');
+const wrongSound = document.getElementById('wrongSound');
+const beltSound  = document.getElementById('beltSound');
+
+
+// ตั้งค่าเป็นตัวเลขอย่างง่าย (แก้เลขได้ตามใจ โดยไม่เสี่ยง syntax พัง)
+const VOL_BGM   = 0.35;
+const VOL_SELECT= 1.70;
+const VOL_HIT   = 0.60;
+const VOL_WIN   = 0.90;
+const VOL_WRONG = 0.40;
+const VOL_BELT  = 0.80;
+
+
+
+
+// ป้องกันพังด้วยการ clamp 0..1
+function v(x){ x=Number(x); return (isFinite(x)? Math.max(0,Math.min(1,x)) : 1); }
+
+if (bgm)         bgm.volume         = v(VOL_BGM);
+if (selectSound) selectSound.volume = v(VOL_SELECT);
+if (hitSound)    hitSound.volume    = v(VOL_HIT);
+if (winSound)    winSound.volume    = v(VOL_WIN);
+if (wrongSound)  wrongSound.volume  = v(VOL_WRONG);
+if (beltSound)   beltSound.volume   = v(VOL_BELT);
+
+/* ===== Bank: รูปวัสดุ =====
+   แก้ path ให้ตรงไฟล์จริงของคุณได้ (ชั่วคราวใช้ไฟล์เดิมที่มีอยู่ก็ได้) */
+const MATERIAL_IMG = {
+    "ความแข็ง":      "image/properties1.png",
+    "ความยืดหยุ่น":   "image/properties4.png",
+    "นำความร้อน": "image/properties2.png",
+    "นำไฟฟ้า":      "image/properties3.png",
+    "ฉนวนไฟฟ้า":      "image/properties5.png",
+    "ฉนวนความร้อน":      "image/properties6.png",
+
+  "ไม้":      "image/object1.png",
+  "เหล็ก":      "image/object2.png",
+  "หิน":      "image/object3.png",
+  "โล่":      "image/object4.png",
+  "โล่กัปตันอเมริกา":      "image/object5.png",
+  "รถถัง":      "image/object6.png",
+  "ชุดเกราะ":      "image/object7.png",
+  "ประแจ":      "image/object8.png",
+  "เพชร":      "image/object9.png",
+  "ทองแดง":      "image/object10.png",
+  "ทองเหลือง":      "image/object11.png",
+  "คอนกรีต":      "image/object12.png",
+  "แร่ควอตซ์":      "image/object13.png",
+  "ฟัน":      "image/object14.png",
+  "อิฐ":      "objects2/object48.png",
+  "ยางรถ":      "image/object15.png",
+  "ถุงมือยาง":      "image/object16.png",
+  "หนังยาง":      "image/object17.png",
+  "ลูกโป่ง":      "image/object18.png",
+  "บาสเก็ตบอล":      "image/object19.png",
+  "ลูกฟุตบอล":      "image/object20.png",
+  "ฟองน้ำ":      "image/object21.png",
+  "แทรมโพลีน":      "image/object22.png",
+  "สปริง":      "image/object23.png",
+  "เป็ดยาง":      "image/object24.png",
+  "รองเท้าแตะ":      "image/object25.png",
+  "ห่วงยาง":      "image/object26.png",
+  "หมวกว่ายน้ำ":      "image/object27.png",
+  "กระทะ":      "objects2/object40.png",
+  "แร่เงิน":      "image/object28.png",
+  "อลูมิเนียม":      "image/object29.png",
+  "สังกะสี":      "image/object30.png",
+  "แก้ว":      "image/object31.png",
+  "เซรามิก":      "image/object32.png",
+  "หม้อ":      "image/object33.png",
+  "กาต้มน้ำ":      "image/object34.png",
+  "ทองคำ":      "image/object35.png",
+  "กระป๋อง":      "objects2/object42.png",
+  "ขวดแก้ว":      "objects2/object53.png",
+  "สายไฟ":      "objects2/object44.png",
+  "น็อตสกรู":      "objects2/object36.png",
+  "โซ่":      "objects2/object37.png",
+  "กุญแจ":      "objects2/object38.png",
+  "ช้อน-ส้อม":      "objects2/object39.png",
+  "โซ่":      "objects2/object37.png",
+  "ไส้ดินสอ":      "objects2/object45.png",
+  "คลิปหนีบกระดาษ":      "objects2/object46.png",
+  "แม่เหล็ก":      "objects2/object55.png",
+  "ไม้เบสบอลเหล็ก":      "objects2/object16.png",
+  "แผงวงจร":      "objects2/object66.png",
+  "พลาสติก":      "objects2/object47.png",
+  "กระดาษ":      "objects2/object49.png",
+  "ผ้า":      "objects2/object50.png",
+  "กระโปรง":      "objects2/object67.png",
+  "กางเกงยีนส์":      "objects2/object68.png",
+  "เสื้อ":      "objects2/object67.png",
+  "ท่อ PVC":      "objects2/object51.png",
+  "กระเบื้อง":      "objects2/object52.png",
+  "ถุงมือกันความร้อน":      "objects2/object54.png",
+  "สไลม์":      "objects2/object56.png",
+  "น้ำ":      "objects2/object57.png",
+  "เค้ก":      "objects2/object58.png",
+  "ดิน":      "objects2/object59.png",
+  "ดินน้ำมัน":      "objects2/object60.png",
+  "น้ำแข็ง":      "objects2/object61.png",
+  "แป้ง":      "objects2/object62.png",
+  "ทราย":      "objects2/object63.png",
+  "น่องไก่":      "objects2/object64.png",
+  "เนื้อ":      "objects2/object65.png",
+};
+
+const rand=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+const pick=(arr)=>arr[rand(0,arr.length-1)];
+const shuffle=(arr)=>{ const A=arr.slice(); for(let i=A.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [A[i],A[j]]=[A[j],A[i]] } return A };
+
+function isGlobalMuted(){ const a=document.querySelector('audio'); return !!a && a.muted===true }
+function playSfx(el,vol){ try{ const n=el?.cloneNode(true); if(!n)return; n.volume=(typeof vol==='number')?Math.max(0,Math.min(1,vol)):(el.volume??1); n.muted=isGlobalMuted(); n.play?.(); }catch(_){} }
+function renderGold(n){ goldWrap.innerHTML = `<span class="num">${Number(n)||0}</span>`; }
+
+// นาฬิกาบน HUD
+let clockUIItv=null, clockState='idle';
+function fmtClock(ms){ const t=Math.max(0,Math.ceil(ms/1000)); const m=String(Math.floor(t/60)).padStart(2,'0'); const s=String(t%60).padStart(2,'0'); return m+':'+s; }
+function renderClock(){ const ms=(clockState==='run')?Math.max(0,(gameEndAt-performance.now())):remainingMs; clockEl.textContent=fmtClock(ms); }
+function startClockUI(){ clockState='run'; if(!clockUIItv) clockUIItv=setInterval(renderClock,250); renderClock(); }
+function pauseClockUI(){ clockState='pause'; if(clockUIItv){ clearInterval(clockUIItv); clockUIItv=null; } renderClock(); }
+function stopClockUI(){ clockState='end'; if(clockUIItv){ clearInterval(clockUIItv); clockUIItv=null; } renderClock(); }
+function resetClockUI(){ clockState='idle'; if(clockUIItv){ clearInterval(clockUIItv); clockUIItv=null; } clockEl.textContent=fmtClock(GAME_DURATION_MS); }
+
+
+// แสดงอีโมจิกลางจอแบบเฟดเข้า–ออก (ขนาด/เวลา ปรับผ่านพารามิเตอร์หรือ CSS var)
+function showEmojiBurst(char='👍', sizePx=120, durationMs=1000){
+  const el = document.getElementById('emojiBurst');
+  if(!el) return;
+  el.textContent = String(char);
+  el.style.setProperty('--emoji-size', `${sizePx}px`);
+  el.style.setProperty('--emoji-ms', `${durationMs}ms`);
+  // รีสตาร์ทอนิเมชัน
+  el.classList.remove('on');
+  void el.offsetWidth;   // force reflow
+  el.classList.add('on');
+}
+
+// คะแนนลอย -> เปลี่ยนเป็น "แฟลชทั้งจอ" 0.7 วินาที
+let __flashTimer = null;
+function flyScore(ok){
+  const ov = document.getElementById('flashOverlay');
+  if(!ov) return;
+  // ตั้งสีตามถูก/ผิด
+  ov.style.background = ok ? 'var(--flash-ok)' : 'var(--flash-bad)';
+
+  // แสดง
+  ov.classList.add('on');
+  // ปิดใน 0.7 วิ (ปรับได้)
+  clearTimeout(__flashTimer);
+  __flashTimer = setTimeout(()=> ov.classList.remove('on'), 400);
+}
+
+const LEVEL1_BINDINGS = {};
+
+
+const LEVEL2_BINDINGS = {};
+
+const OBJECTS = [];
+
+// ===== ด่าน 3: คำถามที่ “ถูกได้หลายตัวเลือก” =====
+const LEVEL3_BANK = [
+  {
+    questionText: 'ความแข็ง',
+    answers: [
+{ type:'material', name:'ไม้', caption:'ไม้', img: MATERIAL_IMG['ไม้'] },
+{ type:'material', name:'เหล็ก', caption:'เหล็ก', img: MATERIAL_IMG['เหล็ก'] },
+{ type:'material', name:'หิน', caption:'หิน', img: MATERIAL_IMG['หิน'] },
+{ type:'material', name:'โล่', caption:'โล่', img: MATERIAL_IMG['โล่'] },
+{ type:'material', name:'โล่กัปตันอเมริกา', caption:'โล่กัปตันอเมริกา', img: MATERIAL_IMG['โล่กัปตันอเมริกา'] },
+{ type:'material', name:'รถถัง', caption:'รถถัง', img: MATERIAL_IMG['รถถัง'] },
+{ type:'material', name:'ชุดเกราะ', caption:'ชุดเกราะ', img: MATERIAL_IMG['ชุดเกราะ'] },
+{ type:'material', name:'ประแจ', caption:'ประแจ', img: MATERIAL_IMG['ประแจ'] },
+{ type:'material', name:'เพชร', caption:'เพชร', img: MATERIAL_IMG['เพชร'] },
+{ type:'material', name:'ทองแดง', caption:'ทองแดง', img: MATERIAL_IMG['ทองแดง'] },
+{ type:'material', name:'ทองเหลือง', caption:'ทองเหลือง', img: MATERIAL_IMG['ทองเหลือง'] },
+{ type:'material', name:'คอนกรีต', caption:'คอนกรีต', img: MATERIAL_IMG['คอนกรีต'] },
+{ type:'material', name:'แร่ควอตซ์', caption:'แร่ควอตซ์', img: MATERIAL_IMG['แร่ควอตซ์'] },
+{ type:'material', name:'ฟัน', caption:'ฟัน', img: MATERIAL_IMG['ฟัน'] },
+{ type:'material', name:'อิฐ', caption:'อิฐ', img: MATERIAL_IMG['อิฐ'] },
+{ type:'material', name:'ยางรถ', caption:'ยางรถ', img: MATERIAL_IMG['ยางรถ'] },
+{ type:'material', name:'ถุงมือยาง', caption:'ถุงมือยาง', img: MATERIAL_IMG['ถุงมือยาง'] },
+{ type:'material', name:'หนังยาง', caption:'หนังยาง', img: MATERIAL_IMG['หนังยาง'] },
+{ type:'material', name:'ลูกโป่ง', caption:'ลูกโป่ง', img: MATERIAL_IMG['ลูกโป่ง'] },
+{ type:'material', name:'บาสเก็ตบอล', caption:'บาสเก็ตบอล', img: MATERIAL_IMG['บาสเก็ตบอล'] },
+{ type:'material', name:'ลูกฟุตบอล', caption:'ลูกฟุตบอล', img: MATERIAL_IMG['ลูกฟุตบอล'] },
+{ type:'material', name:'ฟองน้ำ', caption:'ฟองน้ำ', img: MATERIAL_IMG['ฟองน้ำ'] },
+{ type:'material', name:'แทรมโพลีน', caption:'แทรมโพลีน', img: MATERIAL_IMG['แทรมโพลีน'] },
+{ type:'material', name:'สปริง', caption:'สปริง', img: MATERIAL_IMG['สปริง'] },
+{ type:'material', name:'เป็ดยาง', caption:'เป็ดยาง', img: MATERIAL_IMG['เป็ดยาง'] },
+{ type:'material', name:'รองเท้าแตะ', caption:'รองเท้าแตะ', img: MATERIAL_IMG['รองเท้าแตะ'] },
+{ type:'material', name:'ห่วงยาง', caption:'ห่วงยาง', img: MATERIAL_IMG['ห่วงยาง'] },
+{ type:'material', name:'หมวกว่ายน้ำ', caption:'หมวกว่ายน้ำ', img: MATERIAL_IMG['หมวกว่ายน้ำ'] },
+{ type:'material', name:'กระทะ', caption:'กระทะ', img: MATERIAL_IMG['กระทะ'] },
+{ type:'material', name:'แร่เงิน', caption:'แร่เงิน', img: MATERIAL_IMG['แร่เงิน'] },
+{ type:'material', name:'อลูมิเนียม', caption:'อลูมิเนียม', img: MATERIAL_IMG['อลูมิเนียม'] },
+{ type:'material', name:'สังกะสี', caption:'สังกะสี', img: MATERIAL_IMG['สังกะสี'] },
+{ type:'material', name:'แก้ว', caption:'แก้ว', img: MATERIAL_IMG['แก้ว'] },
+{ type:'material', name:'เซรามิก', caption:'เซรามิก', img: MATERIAL_IMG['เซรามิก'] },
+{ type:'material', name:'หม้อ', caption:'หม้อ', img: MATERIAL_IMG['หม้อ'] },
+{ type:'material', name:'กาต้มน้ำ', caption:'กาต้มน้ำ', img: MATERIAL_IMG['กาต้มน้ำ'] },
+{ type:'material', name:'ทองคำ', caption:'ทองคำ', img: MATERIAL_IMG['ทองคำ'] },
+{ type:'material', name:'กระป๋อง', caption:'กระป๋อง', img: MATERIAL_IMG['กระป๋อง'] },
+{ type:'material', name:'ขวดแก้ว', caption:'ขวดแก้ว', img: MATERIAL_IMG['ขวดแก้ว'] },
+{ type:'material', name:'สายไฟ', caption:'สายไฟ', img: MATERIAL_IMG['สายไฟ'] },
+{ type:'material', name:'น็อตสกรู', caption:'น็อตสกรู', img: MATERIAL_IMG['น็อตสกรู'] },
+{ type:'material', name:'โซ่', caption:'โซ่', img: MATERIAL_IMG['โซ่'] },
+{ type:'material', name:'กุญแจ', caption:'กุญแจ', img: MATERIAL_IMG['กุญแจ'] },
+{ type:'material', name:'ช้อน-ส้อม', caption:'ช้อน-ส้อม', img: MATERIAL_IMG['ช้อน-ส้อม'] },
+{ type:'material', name:'ไส้ดินสอ', caption:'ไส้ดินสอ', img: MATERIAL_IMG['ไส้ดินสอ'] },
+{ type:'material', name:'คลิปหนีบกระดาษ', caption:'คลิปหนีบกระดาษ', img: MATERIAL_IMG['คลิปหนีบกระดาษ'] },
+{ type:'material', name:'แม่เหล็ก', caption:'แม่เหล็ก', img: MATERIAL_IMG['แม่เหล็ก'] },
+{ type:'material', name:'ไม้เบสบอลเหล็ก', caption:'ไม้เบสบอลเหล็ก', img: MATERIAL_IMG['ไม้เบสบอลเหล็ก'] },
+{ type:'material', name:'แผงวงจร', caption:'แผงวงจร', img: MATERIAL_IMG['แผงวงจร'] },
+{ type:'material', name:'พลาสติก', caption:'พลาสติก', img: MATERIAL_IMG['พลาสติก'] },
+{ type:'material', name:'กระดาษ', caption:'กระดาษ', img: MATERIAL_IMG['กระดาษ'] },
+{ type:'material', name:'ผ้า', caption:'ผ้า', img: MATERIAL_IMG['ผ้า'] },
+{ type:'material', name:'กระโปรง', caption:'กระโปรง', img: MATERIAL_IMG['กระโปรง'] },
+{ type:'material', name:'กางเกงยีนส์', caption:'กางเกงยีนส์', img: MATERIAL_IMG['กางเกงยีนส์'] },
+{ type:'material', name:'เสื้อ', caption:'เสื้อ', img: MATERIAL_IMG['เสื้อ'] },
+{ type:'material', name:'ท่อ PVC', caption:'ท่อ PVC', img: MATERIAL_IMG['ท่อ PVC'] },
+{ type:'material', name:'กระเบื้อง', caption:'กระเบื้อง', img: MATERIAL_IMG['กระเบื้อง'] },
+{ type:'material', name:'ถุงมือกันความร้อน', caption:'ถุงมือกันความร้อน', img: MATERIAL_IMG['ถุงมือกันความร้อน'] },
+{ type:'material', name:'สไลม์', caption:'สไลม์', img: MATERIAL_IMG['สไลม์'] },
+{ type:'material', name:'น้ำ', caption:'น้ำ', img: MATERIAL_IMG['น้ำ'] },
+{ type:'material', name:'เค้ก', caption:'เค้ก', img: MATERIAL_IMG['เค้ก'] },
+{ type:'material', name:'ดิน', caption:'ดิน', img: MATERIAL_IMG['ดิน'] },
+{ type:'material', name:'ดินน้ำมัน', caption:'ดินน้ำมัน', img: MATERIAL_IMG['ดินน้ำมัน'] },
+{ type:'material', name:'น้ำแข็ง', caption:'น้ำแข็ง', img: MATERIAL_IMG['น้ำแข็ง'] },
+{ type:'material', name:'แป้ง', caption:'แป้ง', img: MATERIAL_IMG['แป้ง'] },
+{ type:'material', name:'ทราย', caption:'ทราย', img: MATERIAL_IMG['ทราย'] },
+{ type:'material', name:'น่องไก่', caption:'น่องไก่', img: MATERIAL_IMG['น่องไก่'] },
+{ type:'material', name:'เนื้อ', caption:'เนื้อ', img: MATERIAL_IMG['เนื้อ'] },
+    ],
+    correctIndices:  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 27, 28, 29, 34, 35, 40, 41, 42, 43, 46, 47,],
+        scoreByIndex: {1: 2, 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2, 8: 3, 10: 2, 11: 2, 12: 2, 13: 2, 27: 2, 28: 2, 29: 2, 40: 2, 41: 2, 42: 2, 43: 2, 46: 2, 47: 2}
+  },
+
+  {
+    questionText: 'ความยืดหยุ่น',
+    answers: [
+{ type:'material', name:'ไม้', caption:'ไม้', img: MATERIAL_IMG['ไม้'] },
+{ type:'material', name:'เหล็ก', caption:'เหล็ก', img: MATERIAL_IMG['เหล็ก'] },
+{ type:'material', name:'หิน', caption:'หิน', img: MATERIAL_IMG['หิน'] },
+{ type:'material', name:'โล่', caption:'โล่', img: MATERIAL_IMG['โล่'] },
+{ type:'material', name:'โล่กัปตันอเมริกา', caption:'โล่กัปตันอเมริกา', img: MATERIAL_IMG['โล่กัปตันอเมริกา'] },
+{ type:'material', name:'รถถัง', caption:'รถถัง', img: MATERIAL_IMG['รถถัง'] },
+{ type:'material', name:'ชุดเกราะ', caption:'ชุดเกราะ', img: MATERIAL_IMG['ชุดเกราะ'] },
+{ type:'material', name:'ประแจ', caption:'ประแจ', img: MATERIAL_IMG['ประแจ'] },
+{ type:'material', name:'เพชร', caption:'เพชร', img: MATERIAL_IMG['เพชร'] },
+{ type:'material', name:'ทองแดง', caption:'ทองแดง', img: MATERIAL_IMG['ทองแดง'] },
+{ type:'material', name:'ทองเหลือง', caption:'ทองเหลือง', img: MATERIAL_IMG['ทองเหลือง'] },
+{ type:'material', name:'คอนกรีต', caption:'คอนกรีต', img: MATERIAL_IMG['คอนกรีต'] },
+{ type:'material', name:'แร่ควอตซ์', caption:'แร่ควอตซ์', img: MATERIAL_IMG['แร่ควอตซ์'] },
+{ type:'material', name:'ฟัน', caption:'ฟัน', img: MATERIAL_IMG['ฟัน'] },
+{ type:'material', name:'อิฐ', caption:'อิฐ', img: MATERIAL_IMG['อิฐ'] },
+{ type:'material', name:'ยางรถ', caption:'ยางรถ', img: MATERIAL_IMG['ยางรถ'] },
+{ type:'material', name:'ถุงมือยาง', caption:'ถุงมือยาง', img: MATERIAL_IMG['ถุงมือยาง'] },
+{ type:'material', name:'หนังยาง', caption:'หนังยาง', img: MATERIAL_IMG['หนังยาง'] },
+{ type:'material', name:'ลูกโป่ง', caption:'ลูกโป่ง', img: MATERIAL_IMG['ลูกโป่ง'] },
+{ type:'material', name:'บาสเก็ตบอล', caption:'บาสเก็ตบอล', img: MATERIAL_IMG['บาสเก็ตบอล'] },
+{ type:'material', name:'ลูกฟุตบอล', caption:'ลูกฟุตบอล', img: MATERIAL_IMG['ลูกฟุตบอล'] },
+{ type:'material', name:'ฟองน้ำ', caption:'ฟองน้ำ', img: MATERIAL_IMG['ฟองน้ำ'] },
+{ type:'material', name:'แทรมโพลีน', caption:'แทรมโพลีน', img: MATERIAL_IMG['แทรมโพลีน'] },
+{ type:'material', name:'สปริง', caption:'สปริง', img: MATERIAL_IMG['สปริง'] },
+{ type:'material', name:'เป็ดยาง', caption:'เป็ดยาง', img: MATERIAL_IMG['เป็ดยาง'] },
+{ type:'material', name:'รองเท้าแตะ', caption:'รองเท้าแตะ', img: MATERIAL_IMG['รองเท้าแตะ'] },
+{ type:'material', name:'ห่วงยาง', caption:'ห่วงยาง', img: MATERIAL_IMG['ห่วงยาง'] },
+{ type:'material', name:'หมวกว่ายน้ำ', caption:'หมวกว่ายน้ำ', img: MATERIAL_IMG['หมวกว่ายน้ำ'] },
+{ type:'material', name:'กระทะ', caption:'กระทะ', img: MATERIAL_IMG['กระทะ'] },
+{ type:'material', name:'แร่เงิน', caption:'แร่เงิน', img: MATERIAL_IMG['แร่เงิน'] },
+{ type:'material', name:'อลูมิเนียม', caption:'อลูมิเนียม', img: MATERIAL_IMG['อลูมิเนียม'] },
+{ type:'material', name:'สังกะสี', caption:'สังกะสี', img: MATERIAL_IMG['สังกะสี'] },
+{ type:'material', name:'แก้ว', caption:'แก้ว', img: MATERIAL_IMG['แก้ว'] },
+{ type:'material', name:'เซรามิก', caption:'เซรามิก', img: MATERIAL_IMG['เซรามิก'] },
+{ type:'material', name:'หม้อ', caption:'หม้อ', img: MATERIAL_IMG['หม้อ'] },
+{ type:'material', name:'กาต้มน้ำ', caption:'กาต้มน้ำ', img: MATERIAL_IMG['กาต้มน้ำ'] },
+{ type:'material', name:'ทองคำ', caption:'ทองคำ', img: MATERIAL_IMG['ทองคำ'] },
+{ type:'material', name:'กระป๋อง', caption:'กระป๋อง', img: MATERIAL_IMG['กระป๋อง'] },
+{ type:'material', name:'ขวดแก้ว', caption:'ขวดแก้ว', img: MATERIAL_IMG['ขวดแก้ว'] },
+{ type:'material', name:'สายไฟ', caption:'สายไฟ', img: MATERIAL_IMG['สายไฟ'] },
+{ type:'material', name:'น็อตสกรู', caption:'น็อตสกรู', img: MATERIAL_IMG['น็อตสกรู'] },
+{ type:'material', name:'โซ่', caption:'โซ่', img: MATERIAL_IMG['โซ่'] },
+{ type:'material', name:'กุญแจ', caption:'กุญแจ', img: MATERIAL_IMG['กุญแจ'] },
+{ type:'material', name:'ช้อน-ส้อม', caption:'ช้อน-ส้อม', img: MATERIAL_IMG['ช้อน-ส้อม'] },
+{ type:'material', name:'ไส้ดินสอ', caption:'ไส้ดินสอ', img: MATERIAL_IMG['ไส้ดินสอ'] },
+{ type:'material', name:'คลิปหนีบกระดาษ', caption:'คลิปหนีบกระดาษ', img: MATERIAL_IMG['คลิปหนีบกระดาษ'] },
+{ type:'material', name:'แม่เหล็ก', caption:'แม่เหล็ก', img: MATERIAL_IMG['แม่เหล็ก'] },
+{ type:'material', name:'ไม้เบสบอลเหล็ก', caption:'ไม้เบสบอลเหล็ก', img: MATERIAL_IMG['ไม้เบสบอลเหล็ก'] },
+{ type:'material', name:'แผงวงจร', caption:'แผงวงจร', img: MATERIAL_IMG['แผงวงจร'] },
+{ type:'material', name:'พลาสติก', caption:'พลาสติก', img: MATERIAL_IMG['พลาสติก'] },
+{ type:'material', name:'กระดาษ', caption:'กระดาษ', img: MATERIAL_IMG['กระดาษ'] },
+{ type:'material', name:'ผ้า', caption:'ผ้า', img: MATERIAL_IMG['ผ้า'] },
+{ type:'material', name:'กระโปรง', caption:'กระโปรง', img: MATERIAL_IMG['กระโปรง'] },
+{ type:'material', name:'กางเกงยีนส์', caption:'กางเกงยีนส์', img: MATERIAL_IMG['กางเกงยีนส์'] },
+{ type:'material', name:'เสื้อ', caption:'เสื้อ', img: MATERIAL_IMG['เสื้อ'] },
+{ type:'material', name:'ท่อ PVC', caption:'ท่อ PVC', img: MATERIAL_IMG['ท่อ PVC'] },
+{ type:'material', name:'กระเบื้อง', caption:'กระเบื้อง', img: MATERIAL_IMG['กระเบื้อง'] },
+{ type:'material', name:'ถุงมือกันความร้อน', caption:'ถุงมือกันความร้อน', img: MATERIAL_IMG['ถุงมือกันความร้อน'] },
+{ type:'material', name:'สไลม์', caption:'สไลม์', img: MATERIAL_IMG['สไลม์'] },
+{ type:'material', name:'น้ำ', caption:'น้ำ', img: MATERIAL_IMG['น้ำ'] },
+{ type:'material', name:'เค้ก', caption:'เค้ก', img: MATERIAL_IMG['เค้ก'] },
+{ type:'material', name:'ดิน', caption:'ดิน', img: MATERIAL_IMG['ดิน'] },
+{ type:'material', name:'ดินน้ำมัน', caption:'ดินน้ำมัน', img: MATERIAL_IMG['ดินน้ำมัน'] },
+{ type:'material', name:'น้ำแข็ง', caption:'น้ำแข็ง', img: MATERIAL_IMG['น้ำแข็ง'] },
+{ type:'material', name:'แป้ง', caption:'แป้ง', img: MATERIAL_IMG['แป้ง'] },
+{ type:'material', name:'ทราย', caption:'ทราย', img: MATERIAL_IMG['ทราย'] },
+{ type:'material', name:'น่องไก่', caption:'น่องไก่', img: MATERIAL_IMG['น่องไก่'] },
+{ type:'material', name:'เนื้อ', caption:'เนื้อ', img: MATERIAL_IMG['เนื้อ'] },
+    ],
+    correctIndices: [15, 61, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27],
+       scoreByIndex:{15: 2, 16: 2, 17: 2, 18: 2, 22: 2, 23: 2}
+  },
+
+   {
+    questionText: 'นำความร้อน',
+    answers: [
+{ type:'material', name:'ไม้', caption:'ไม้', img: MATERIAL_IMG['ไม้'] },
+{ type:'material', name:'เหล็ก', caption:'เหล็ก', img: MATERIAL_IMG['เหล็ก'] },
+{ type:'material', name:'หิน', caption:'หิน', img: MATERIAL_IMG['หิน'] },
+{ type:'material', name:'โล่', caption:'โล่', img: MATERIAL_IMG['โล่'] },
+{ type:'material', name:'โล่กัปตันอเมริกา', caption:'โล่กัปตันอเมริกา', img: MATERIAL_IMG['โล่กัปตันอเมริกา'] },
+{ type:'material', name:'รถถัง', caption:'รถถัง', img: MATERIAL_IMG['รถถัง'] },
+{ type:'material', name:'ชุดเกราะ', caption:'ชุดเกราะ', img: MATERIAL_IMG['ชุดเกราะ'] },
+{ type:'material', name:'ประแจ', caption:'ประแจ', img: MATERIAL_IMG['ประแจ'] },
+{ type:'material', name:'เพชร', caption:'เพชร', img: MATERIAL_IMG['เพชร'] },
+{ type:'material', name:'ทองแดง', caption:'ทองแดง', img: MATERIAL_IMG['ทองแดง'] },
+{ type:'material', name:'ทองเหลือง', caption:'ทองเหลือง', img: MATERIAL_IMG['ทองเหลือง'] },
+{ type:'material', name:'คอนกรีต', caption:'คอนกรีต', img: MATERIAL_IMG['คอนกรีต'] },
+{ type:'material', name:'แร่ควอตซ์', caption:'แร่ควอตซ์', img: MATERIAL_IMG['แร่ควอตซ์'] },
+{ type:'material', name:'ฟัน', caption:'ฟัน', img: MATERIAL_IMG['ฟัน'] },
+{ type:'material', name:'อิฐ', caption:'อิฐ', img: MATERIAL_IMG['อิฐ'] },
+{ type:'material', name:'ยางรถ', caption:'ยางรถ', img: MATERIAL_IMG['ยางรถ'] },
+{ type:'material', name:'ถุงมือยาง', caption:'ถุงมือยาง', img: MATERIAL_IMG['ถุงมือยาง'] },
+{ type:'material', name:'หนังยาง', caption:'หนังยาง', img: MATERIAL_IMG['หนังยาง'] },
+{ type:'material', name:'ลูกโป่ง', caption:'ลูกโป่ง', img: MATERIAL_IMG['ลูกโป่ง'] },
+{ type:'material', name:'บาสเก็ตบอล', caption:'บาสเก็ตบอล', img: MATERIAL_IMG['บาสเก็ตบอล'] },
+{ type:'material', name:'ลูกฟุตบอล', caption:'ลูกฟุตบอล', img: MATERIAL_IMG['ลูกฟุตบอล'] },
+{ type:'material', name:'ฟองน้ำ', caption:'ฟองน้ำ', img: MATERIAL_IMG['ฟองน้ำ'] },
+{ type:'material', name:'แทรมโพลีน', caption:'แทรมโพลีน', img: MATERIAL_IMG['แทรมโพลีน'] },
+{ type:'material', name:'สปริง', caption:'สปริง', img: MATERIAL_IMG['สปริง'] },
+{ type:'material', name:'เป็ดยาง', caption:'เป็ดยาง', img: MATERIAL_IMG['เป็ดยาง'] },
+{ type:'material', name:'รองเท้าแตะ', caption:'รองเท้าแตะ', img: MATERIAL_IMG['รองเท้าแตะ'] },
+{ type:'material', name:'ห่วงยาง', caption:'ห่วงยาง', img: MATERIAL_IMG['ห่วงยาง'] },
+{ type:'material', name:'หมวกว่ายน้ำ', caption:'หมวกว่ายน้ำ', img: MATERIAL_IMG['หมวกว่ายน้ำ'] },
+{ type:'material', name:'กระทะ', caption:'กระทะ', img: MATERIAL_IMG['กระทะ'] },
+{ type:'material', name:'แร่เงิน', caption:'แร่เงิน', img: MATERIAL_IMG['แร่เงิน'] },
+{ type:'material', name:'อลูมิเนียม', caption:'อลูมิเนียม', img: MATERIAL_IMG['อลูมิเนียม'] },
+{ type:'material', name:'สังกะสี', caption:'สังกะสี', img: MATERIAL_IMG['สังกะสี'] },
+{ type:'material', name:'แก้ว', caption:'แก้ว', img: MATERIAL_IMG['แก้ว'] },
+{ type:'material', name:'เซรามิก', caption:'เซรามิก', img: MATERIAL_IMG['เซรามิก'] },
+{ type:'material', name:'หม้อ', caption:'หม้อ', img: MATERIAL_IMG['หม้อ'] },
+{ type:'material', name:'กาต้มน้ำ', caption:'กาต้มน้ำ', img: MATERIAL_IMG['กาต้มน้ำ'] },
+{ type:'material', name:'ทองคำ', caption:'ทองคำ', img: MATERIAL_IMG['ทองคำ'] },
+{ type:'material', name:'กระป๋อง', caption:'กระป๋อง', img: MATERIAL_IMG['กระป๋อง'] },
+{ type:'material', name:'ขวดแก้ว', caption:'ขวดแก้ว', img: MATERIAL_IMG['ขวดแก้ว'] },
+{ type:'material', name:'สายไฟ', caption:'สายไฟ', img: MATERIAL_IMG['สายไฟ'] },
+{ type:'material', name:'น็อตสกรู', caption:'น็อตสกรู', img: MATERIAL_IMG['น็อตสกรู'] },
+{ type:'material', name:'โซ่', caption:'โซ่', img: MATERIAL_IMG['โซ่'] },
+{ type:'material', name:'กุญแจ', caption:'กุญแจ', img: MATERIAL_IMG['กุญแจ'] },
+{ type:'material', name:'ช้อน-ส้อม', caption:'ช้อน-ส้อม', img: MATERIAL_IMG['ช้อน-ส้อม'] },
+{ type:'material', name:'ไส้ดินสอ', caption:'ไส้ดินสอ', img: MATERIAL_IMG['ไส้ดินสอ'] },
+{ type:'material', name:'คลิปหนีบกระดาษ', caption:'คลิปหนีบกระดาษ', img: MATERIAL_IMG['คลิปหนีบกระดาษ'] },
+{ type:'material', name:'แม่เหล็ก', caption:'แม่เหล็ก', img: MATERIAL_IMG['แม่เหล็ก'] },
+{ type:'material', name:'ไม้เบสบอลเหล็ก', caption:'ไม้เบสบอลเหล็ก', img: MATERIAL_IMG['ไม้เบสบอลเหล็ก'] },
+{ type:'material', name:'แผงวงจร', caption:'แผงวงจร', img: MATERIAL_IMG['แผงวงจร'] },
+{ type:'material', name:'พลาสติก', caption:'พลาสติก', img: MATERIAL_IMG['พลาสติก'] },
+{ type:'material', name:'กระดาษ', caption:'กระดาษ', img: MATERIAL_IMG['กระดาษ'] },
+{ type:'material', name:'ผ้า', caption:'ผ้า', img: MATERIAL_IMG['ผ้า'] },
+{ type:'material', name:'กระโปรง', caption:'กระโปรง', img: MATERIAL_IMG['กระโปรง'] },
+{ type:'material', name:'กางเกงยีนส์', caption:'กางเกงยีนส์', img: MATERIAL_IMG['กางเกงยีนส์'] },
+{ type:'material', name:'เสื้อ', caption:'เสื้อ', img: MATERIAL_IMG['เสื้อ'] },
+{ type:'material', name:'ท่อ PVC', caption:'ท่อ PVC', img: MATERIAL_IMG['ท่อ PVC'] },
+{ type:'material', name:'กระเบื้อง', caption:'กระเบื้อง', img: MATERIAL_IMG['กระเบื้อง'] },
+{ type:'material', name:'ถุงมือกันความร้อน', caption:'ถุงมือกันความร้อน', img: MATERIAL_IMG['ถุงมือกันความร้อน'] },
+{ type:'material', name:'สไลม์', caption:'สไลม์', img: MATERIAL_IMG['สไลม์'] },
+{ type:'material', name:'น้ำ', caption:'น้ำ', img: MATERIAL_IMG['น้ำ'] },
+{ type:'material', name:'เค้ก', caption:'เค้ก', img: MATERIAL_IMG['เค้ก'] },
+{ type:'material', name:'ดิน', caption:'ดิน', img: MATERIAL_IMG['ดิน'] },
+{ type:'material', name:'ดินน้ำมัน', caption:'ดินน้ำมัน', img: MATERIAL_IMG['ดินน้ำมัน'] },
+{ type:'material', name:'น้ำแข็ง', caption:'น้ำแข็ง', img: MATERIAL_IMG['น้ำแข็ง'] },
+{ type:'material', name:'แป้ง', caption:'แป้ง', img: MATERIAL_IMG['แป้ง'] },
+{ type:'material', name:'ทราย', caption:'ทราย', img: MATERIAL_IMG['ทราย'] },
+{ type:'material', name:'น่องไก่', caption:'น่องไก่', img: MATERIAL_IMG['น่องไก่'] },
+{ type:'material', name:'เนื้อ', caption:'เนื้อ', img: MATERIAL_IMG['เนื้อ'] },
+    ],
+    correctIndices: [1, 3, 4, 5, 6, 7, 8, 9, 10, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 45, 46, 47,],
+       scoreByIndex:{8: 3, 9: 2, 10: 2, 29: 2, 30: 2, 36: 2}
+  },
+
+  {
+    questionText: 'นำไฟฟ้า',
+    answers: [
+{ type:'material', name:'ไม้', caption:'ไม้', img: MATERIAL_IMG['ไม้'] },
+{ type:'material', name:'เหล็ก', caption:'เหล็ก', img: MATERIAL_IMG['เหล็ก'] },
+{ type:'material', name:'หิน', caption:'หิน', img: MATERIAL_IMG['หิน'] },
+{ type:'material', name:'โล่', caption:'โล่', img: MATERIAL_IMG['โล่'] },
+{ type:'material', name:'โล่กัปตันอเมริกา', caption:'โล่กัปตันอเมริกา', img: MATERIAL_IMG['โล่กัปตันอเมริกา'] },
+{ type:'material', name:'รถถัง', caption:'รถถัง', img: MATERIAL_IMG['รถถัง'] },
+{ type:'material', name:'ชุดเกราะ', caption:'ชุดเกราะ', img: MATERIAL_IMG['ชุดเกราะ'] },
+{ type:'material', name:'ประแจ', caption:'ประแจ', img: MATERIAL_IMG['ประแจ'] },
+{ type:'material', name:'เพชร', caption:'เพชร', img: MATERIAL_IMG['เพชร'] },
+{ type:'material', name:'ทองแดง', caption:'ทองแดง', img: MATERIAL_IMG['ทองแดง'] },
+{ type:'material', name:'ทองเหลือง', caption:'ทองเหลือง', img: MATERIAL_IMG['ทองเหลือง'] },
+{ type:'material', name:'คอนกรีต', caption:'คอนกรีต', img: MATERIAL_IMG['คอนกรีต'] },
+{ type:'material', name:'แร่ควอตซ์', caption:'แร่ควอตซ์', img: MATERIAL_IMG['แร่ควอตซ์'] },
+{ type:'material', name:'ฟัน', caption:'ฟัน', img: MATERIAL_IMG['ฟัน'] },
+{ type:'material', name:'อิฐ', caption:'อิฐ', img: MATERIAL_IMG['อิฐ'] },
+{ type:'material', name:'ยางรถ', caption:'ยางรถ', img: MATERIAL_IMG['ยางรถ'] },
+{ type:'material', name:'ถุงมือยาง', caption:'ถุงมือยาง', img: MATERIAL_IMG['ถุงมือยาง'] },
+{ type:'material', name:'หนังยาง', caption:'หนังยาง', img: MATERIAL_IMG['หนังยาง'] },
+{ type:'material', name:'ลูกโป่ง', caption:'ลูกโป่ง', img: MATERIAL_IMG['ลูกโป่ง'] },
+{ type:'material', name:'บาสเก็ตบอล', caption:'บาสเก็ตบอล', img: MATERIAL_IMG['บาสเก็ตบอล'] },
+{ type:'material', name:'ลูกฟุตบอล', caption:'ลูกฟุตบอล', img: MATERIAL_IMG['ลูกฟุตบอล'] },
+{ type:'material', name:'ฟองน้ำ', caption:'ฟองน้ำ', img: MATERIAL_IMG['ฟองน้ำ'] },
+{ type:'material', name:'แทรมโพลีน', caption:'แทรมโพลีน', img: MATERIAL_IMG['แทรมโพลีน'] },
+{ type:'material', name:'สปริง', caption:'สปริง', img: MATERIAL_IMG['สปริง'] },
+{ type:'material', name:'เป็ดยาง', caption:'เป็ดยาง', img: MATERIAL_IMG['เป็ดยาง'] },
+{ type:'material', name:'รองเท้าแตะ', caption:'รองเท้าแตะ', img: MATERIAL_IMG['รองเท้าแตะ'] },
+{ type:'material', name:'ห่วงยาง', caption:'ห่วงยาง', img: MATERIAL_IMG['ห่วงยาง'] },
+{ type:'material', name:'หมวกว่ายน้ำ', caption:'หมวกว่ายน้ำ', img: MATERIAL_IMG['หมวกว่ายน้ำ'] },
+{ type:'material', name:'กระทะ', caption:'กระทะ', img: MATERIAL_IMG['กระทะ'] },
+{ type:'material', name:'แร่เงิน', caption:'แร่เงิน', img: MATERIAL_IMG['แร่เงิน'] },
+{ type:'material', name:'อลูมิเนียม', caption:'อลูมิเนียม', img: MATERIAL_IMG['อลูมิเนียม'] },
+{ type:'material', name:'สังกะสี', caption:'สังกะสี', img: MATERIAL_IMG['สังกะสี'] },
+{ type:'material', name:'แก้ว', caption:'แก้ว', img: MATERIAL_IMG['แก้ว'] },
+{ type:'material', name:'เซรามิก', caption:'เซรามิก', img: MATERIAL_IMG['เซรามิก'] },
+{ type:'material', name:'หม้อ', caption:'หม้อ', img: MATERIAL_IMG['หม้อ'] },
+{ type:'material', name:'กาต้มน้ำ', caption:'กาต้มน้ำ', img: MATERIAL_IMG['กาต้มน้ำ'] },
+{ type:'material', name:'ทองคำ', caption:'ทองคำ', img: MATERIAL_IMG['ทองคำ'] },
+{ type:'material', name:'กระป๋อง', caption:'กระป๋อง', img: MATERIAL_IMG['กระป๋อง'] },
+{ type:'material', name:'ขวดแก้ว', caption:'ขวดแก้ว', img: MATERIAL_IMG['ขวดแก้ว'] },
+{ type:'material', name:'สายไฟ', caption:'สายไฟ', img: MATERIAL_IMG['สายไฟ'] },
+{ type:'material', name:'น็อตสกรู', caption:'น็อตสกรู', img: MATERIAL_IMG['น็อตสกรู'] },
+{ type:'material', name:'โซ่', caption:'โซ่', img: MATERIAL_IMG['โซ่'] },
+{ type:'material', name:'กุญแจ', caption:'กุญแจ', img: MATERIAL_IMG['กุญแจ'] },
+{ type:'material', name:'ช้อน-ส้อม', caption:'ช้อน-ส้อม', img: MATERIAL_IMG['ช้อน-ส้อม'] },
+{ type:'material', name:'ไส้ดินสอ', caption:'ไส้ดินสอ', img: MATERIAL_IMG['ไส้ดินสอ'] },
+{ type:'material', name:'คลิปหนีบกระดาษ', caption:'คลิปหนีบกระดาษ', img: MATERIAL_IMG['คลิปหนีบกระดาษ'] },
+{ type:'material', name:'แม่เหล็ก', caption:'แม่เหล็ก', img: MATERIAL_IMG['แม่เหล็ก'] },
+{ type:'material', name:'ไม้เบสบอลเหล็ก', caption:'ไม้เบสบอลเหล็ก', img: MATERIAL_IMG['ไม้เบสบอลเหล็ก'] },
+{ type:'material', name:'แผงวงจร', caption:'แผงวงจร', img: MATERIAL_IMG['แผงวงจร'] },
+{ type:'material', name:'พลาสติก', caption:'พลาสติก', img: MATERIAL_IMG['พลาสติก'] },
+{ type:'material', name:'กระดาษ', caption:'กระดาษ', img: MATERIAL_IMG['กระดาษ'] },
+{ type:'material', name:'ผ้า', caption:'ผ้า', img: MATERIAL_IMG['ผ้า'] },
+{ type:'material', name:'กระโปรง', caption:'กระโปรง', img: MATERIAL_IMG['กระโปรง'] },
+{ type:'material', name:'กางเกงยีนส์', caption:'กางเกงยีนส์', img: MATERIAL_IMG['กางเกงยีนส์'] },
+{ type:'material', name:'เสื้อ', caption:'เสื้อ', img: MATERIAL_IMG['เสื้อ'] },
+{ type:'material', name:'ท่อ PVC', caption:'ท่อ PVC', img: MATERIAL_IMG['ท่อ PVC'] },
+{ type:'material', name:'กระเบื้อง', caption:'กระเบื้อง', img: MATERIAL_IMG['กระเบื้อง'] },
+{ type:'material', name:'ถุงมือกันความร้อน', caption:'ถุงมือกันความร้อน', img: MATERIAL_IMG['ถุงมือกันความร้อน'] },
+{ type:'material', name:'สไลม์', caption:'สไลม์', img: MATERIAL_IMG['สไลม์'] },
+{ type:'material', name:'น้ำ', caption:'น้ำ', img: MATERIAL_IMG['น้ำ'] },
+{ type:'material', name:'เค้ก', caption:'เค้ก', img: MATERIAL_IMG['เค้ก'] },
+{ type:'material', name:'ดิน', caption:'ดิน', img: MATERIAL_IMG['ดิน'] },
+{ type:'material', name:'ดินน้ำมัน', caption:'ดินน้ำมัน', img: MATERIAL_IMG['ดินน้ำมัน'] },
+{ type:'material', name:'น้ำแข็ง', caption:'น้ำแข็ง', img: MATERIAL_IMG['น้ำแข็ง'] },
+{ type:'material', name:'แป้ง', caption:'แป้ง', img: MATERIAL_IMG['แป้ง'] },
+{ type:'material', name:'ทราย', caption:'ทราย', img: MATERIAL_IMG['ทราย'] },
+{ type:'material', name:'น่องไก่', caption:'น่องไก่', img: MATERIAL_IMG['น่องไก่'] },
+{ type:'material', name:'เนื้อ', caption:'เนื้อ', img: MATERIAL_IMG['เนื้อ'] },
+    ],
+    correctIndices: [1, 3, 4, 5, 6, 7, 9, 10, 23, 28, 29, 30, 31, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48],
+       scoreByIndex:{1: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2, 9: 2, 10: 2, 29: 3, 36: 3, 39: 2, 48: 2}
+  },
+
+   {
+    questionText: 'ฉนวนไฟฟ้า',
+    answers: [
+{ type:'material', name:'ไม้', caption:'ไม้', img: MATERIAL_IMG['ไม้'] },
+{ type:'material', name:'เหล็ก', caption:'เหล็ก', img: MATERIAL_IMG['เหล็ก'] },
+{ type:'material', name:'หิน', caption:'หิน', img: MATERIAL_IMG['หิน'] },
+{ type:'material', name:'โล่', caption:'โล่', img: MATERIAL_IMG['โล่'] },
+{ type:'material', name:'โล่กัปตันอเมริกา', caption:'โล่กัปตันอเมริกา', img: MATERIAL_IMG['โล่กัปตันอเมริกา'] },
+{ type:'material', name:'รถถัง', caption:'รถถัง', img: MATERIAL_IMG['รถถัง'] },
+{ type:'material', name:'ชุดเกราะ', caption:'ชุดเกราะ', img: MATERIAL_IMG['ชุดเกราะ'] },
+{ type:'material', name:'ประแจ', caption:'ประแจ', img: MATERIAL_IMG['ประแจ'] },
+{ type:'material', name:'เพชร', caption:'เพชร', img: MATERIAL_IMG['เพชร'] },
+{ type:'material', name:'ทองแดง', caption:'ทองแดง', img: MATERIAL_IMG['ทองแดง'] },
+{ type:'material', name:'ทองเหลือง', caption:'ทองเหลือง', img: MATERIAL_IMG['ทองเหลือง'] },
+{ type:'material', name:'คอนกรีต', caption:'คอนกรีต', img: MATERIAL_IMG['คอนกรีต'] },
+{ type:'material', name:'แร่ควอตซ์', caption:'แร่ควอตซ์', img: MATERIAL_IMG['แร่ควอตซ์'] },
+{ type:'material', name:'ฟัน', caption:'ฟัน', img: MATERIAL_IMG['ฟัน'] },
+{ type:'material', name:'อิฐ', caption:'อิฐ', img: MATERIAL_IMG['อิฐ'] },
+{ type:'material', name:'ยางรถ', caption:'ยางรถ', img: MATERIAL_IMG['ยางรถ'] },
+{ type:'material', name:'ถุงมือยาง', caption:'ถุงมือยาง', img: MATERIAL_IMG['ถุงมือยาง'] },
+{ type:'material', name:'หนังยาง', caption:'หนังยาง', img: MATERIAL_IMG['หนังยาง'] },
+{ type:'material', name:'ลูกโป่ง', caption:'ลูกโป่ง', img: MATERIAL_IMG['ลูกโป่ง'] },
+{ type:'material', name:'บาสเก็ตบอล', caption:'บาสเก็ตบอล', img: MATERIAL_IMG['บาสเก็ตบอล'] },
+{ type:'material', name:'ลูกฟุตบอล', caption:'ลูกฟุตบอล', img: MATERIAL_IMG['ลูกฟุตบอล'] },
+{ type:'material', name:'ฟองน้ำ', caption:'ฟองน้ำ', img: MATERIAL_IMG['ฟองน้ำ'] },
+{ type:'material', name:'แทรมโพลีน', caption:'แทรมโพลีน', img: MATERIAL_IMG['แทรมโพลีน'] },
+{ type:'material', name:'สปริง', caption:'สปริง', img: MATERIAL_IMG['สปริง'] },
+{ type:'material', name:'เป็ดยาง', caption:'เป็ดยาง', img: MATERIAL_IMG['เป็ดยาง'] },
+{ type:'material', name:'รองเท้าแตะ', caption:'รองเท้าแตะ', img: MATERIAL_IMG['รองเท้าแตะ'] },
+{ type:'material', name:'ห่วงยาง', caption:'ห่วงยาง', img: MATERIAL_IMG['ห่วงยาง'] },
+{ type:'material', name:'หมวกว่ายน้ำ', caption:'หมวกว่ายน้ำ', img: MATERIAL_IMG['หมวกว่ายน้ำ'] },
+{ type:'material', name:'กระทะ', caption:'กระทะ', img: MATERIAL_IMG['กระทะ'] },
+{ type:'material', name:'แร่เงิน', caption:'แร่เงิน', img: MATERIAL_IMG['แร่เงิน'] },
+{ type:'material', name:'อลูมิเนียม', caption:'อลูมิเนียม', img: MATERIAL_IMG['อลูมิเนียม'] },
+{ type:'material', name:'สังกะสี', caption:'สังกะสี', img: MATERIAL_IMG['สังกะสี'] },
+{ type:'material', name:'แก้ว', caption:'แก้ว', img: MATERIAL_IMG['แก้ว'] },
+{ type:'material', name:'เซรามิก', caption:'เซรามิก', img: MATERIAL_IMG['เซรามิก'] },
+{ type:'material', name:'หม้อ', caption:'หม้อ', img: MATERIAL_IMG['หม้อ'] },
+{ type:'material', name:'กาต้มน้ำ', caption:'กาต้มน้ำ', img: MATERIAL_IMG['กาต้มน้ำ'] },
+{ type:'material', name:'ทองคำ', caption:'ทองคำ', img: MATERIAL_IMG['ทองคำ'] },
+{ type:'material', name:'กระป๋อง', caption:'กระป๋อง', img: MATERIAL_IMG['กระป๋อง'] },
+{ type:'material', name:'ขวดแก้ว', caption:'ขวดแก้ว', img: MATERIAL_IMG['ขวดแก้ว'] },
+{ type:'material', name:'สายไฟ', caption:'สายไฟ', img: MATERIAL_IMG['สายไฟ'] },
+{ type:'material', name:'น็อตสกรู', caption:'น็อตสกรู', img: MATERIAL_IMG['น็อตสกรู'] },
+{ type:'material', name:'โซ่', caption:'โซ่', img: MATERIAL_IMG['โซ่'] },
+{ type:'material', name:'กุญแจ', caption:'กุญแจ', img: MATERIAL_IMG['กุญแจ'] },
+{ type:'material', name:'ช้อน-ส้อม', caption:'ช้อน-ส้อม', img: MATERIAL_IMG['ช้อน-ส้อม'] },
+{ type:'material', name:'ไส้ดินสอ', caption:'ไส้ดินสอ', img: MATERIAL_IMG['ไส้ดินสอ'] },
+{ type:'material', name:'คลิปหนีบกระดาษ', caption:'คลิปหนีบกระดาษ', img: MATERIAL_IMG['คลิปหนีบกระดาษ'] },
+{ type:'material', name:'แม่เหล็ก', caption:'แม่เหล็ก', img: MATERIAL_IMG['แม่เหล็ก'] },
+{ type:'material', name:'ไม้เบสบอลเหล็ก', caption:'ไม้เบสบอลเหล็ก', img: MATERIAL_IMG['ไม้เบสบอลเหล็ก'] },
+{ type:'material', name:'แผงวงจร', caption:'แผงวงจร', img: MATERIAL_IMG['แผงวงจร'] },
+{ type:'material', name:'พลาสติก', caption:'พลาสติก', img: MATERIAL_IMG['พลาสติก'] },
+{ type:'material', name:'กระดาษ', caption:'กระดาษ', img: MATERIAL_IMG['กระดาษ'] },
+{ type:'material', name:'ผ้า', caption:'ผ้า', img: MATERIAL_IMG['ผ้า'] },
+{ type:'material', name:'กระโปรง', caption:'กระโปรง', img: MATERIAL_IMG['กระโปรง'] },
+{ type:'material', name:'กางเกงยีนส์', caption:'กางเกงยีนส์', img: MATERIAL_IMG['กางเกงยีนส์'] },
+{ type:'material', name:'เสื้อ', caption:'เสื้อ', img: MATERIAL_IMG['เสื้อ'] },
+{ type:'material', name:'ท่อ PVC', caption:'ท่อ PVC', img: MATERIAL_IMG['ท่อ PVC'] },
+{ type:'material', name:'กระเบื้อง', caption:'กระเบื้อง', img: MATERIAL_IMG['กระเบื้อง'] },
+{ type:'material', name:'ถุงมือกันความร้อน', caption:'ถุงมือกันความร้อน', img: MATERIAL_IMG['ถุงมือกันความร้อน'] },
+{ type:'material', name:'สไลม์', caption:'สไลม์', img: MATERIAL_IMG['สไลม์'] },
+{ type:'material', name:'น้ำ', caption:'น้ำ', img: MATERIAL_IMG['น้ำ'] },
+{ type:'material', name:'เค้ก', caption:'เค้ก', img: MATERIAL_IMG['เค้ก'] },
+{ type:'material', name:'ดิน', caption:'ดิน', img: MATERIAL_IMG['ดิน'] },
+{ type:'material', name:'ดินน้ำมัน', caption:'ดินน้ำมัน', img: MATERIAL_IMG['ดินน้ำมัน'] },
+{ type:'material', name:'น้ำแข็ง', caption:'น้ำแข็ง', img: MATERIAL_IMG['น้ำแข็ง'] },
+{ type:'material', name:'แป้ง', caption:'แป้ง', img: MATERIAL_IMG['แป้ง'] },
+{ type:'material', name:'ทราย', caption:'ทราย', img: MATERIAL_IMG['ทราย'] },
+{ type:'material', name:'น่องไก่', caption:'น่องไก่', img: MATERIAL_IMG['น่องไก่'] },
+{ type:'material', name:'เนื้อ', caption:'เนื้อ', img: MATERIAL_IMG['เนื้อ'] },
+    ],
+    correctIndices: [0, 2, 8, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 32, 33, 38, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 66, 67],
+       scoreByIndex:{0: 2, 8: 2,  15: 3, 16: 3, 17: 3, 18: 2, 19: 2, 20: 2, 21: 2, 22: 2, 24: 3, 25: 3, 26: 3, 27: 3, 32: 2, 33: 2, 38: 2, 49: 3,
+ 50: 2, 51: 2, 52: 2, 53: 2, 54: 2, 55: 2, 56: 2, 57: 2, 58: 2,  63: 2}
+  },
+
+   {
+    questionText: 'ฉนวนความร้อน',
+    answers: [
+{ type:'material', name:'ไม้', caption:'ไม้', img: MATERIAL_IMG['ไม้'] },
+{ type:'material', name:'เหล็ก', caption:'เหล็ก', img: MATERIAL_IMG['เหล็ก'] },
+{ type:'material', name:'หิน', caption:'หิน', img: MATERIAL_IMG['หิน'] },
+{ type:'material', name:'โล่', caption:'โล่', img: MATERIAL_IMG['โล่'] },
+{ type:'material', name:'โล่กัปตันอเมริกา', caption:'โล่กัปตันอเมริกา', img: MATERIAL_IMG['โล่กัปตันอเมริกา'] },
+{ type:'material', name:'รถถัง', caption:'รถถัง', img: MATERIAL_IMG['รถถัง'] },
+{ type:'material', name:'ชุดเกราะ', caption:'ชุดเกราะ', img: MATERIAL_IMG['ชุดเกราะ'] },
+{ type:'material', name:'ประแจ', caption:'ประแจ', img: MATERIAL_IMG['ประแจ'] },
+{ type:'material', name:'เพชร', caption:'เพชร', img: MATERIAL_IMG['เพชร'] },
+{ type:'material', name:'ทองแดง', caption:'ทองแดง', img: MATERIAL_IMG['ทองแดง'] },
+{ type:'material', name:'ทองเหลือง', caption:'ทองเหลือง', img: MATERIAL_IMG['ทองเหลือง'] },
+{ type:'material', name:'คอนกรีต', caption:'คอนกรีต', img: MATERIAL_IMG['คอนกรีต'] },
+{ type:'material', name:'แร่ควอตซ์', caption:'แร่ควอตซ์', img: MATERIAL_IMG['แร่ควอตซ์'] },
+{ type:'material', name:'ฟัน', caption:'ฟัน', img: MATERIAL_IMG['ฟัน'] },
+{ type:'material', name:'อิฐ', caption:'อิฐ', img: MATERIAL_IMG['อิฐ'] },
+{ type:'material', name:'ยางรถ', caption:'ยางรถ', img: MATERIAL_IMG['ยางรถ'] },
+{ type:'material', name:'ถุงมือยาง', caption:'ถุงมือยาง', img: MATERIAL_IMG['ถุงมือยาง'] },
+{ type:'material', name:'หนังยาง', caption:'หนังยาง', img: MATERIAL_IMG['หนังยาง'] },
+{ type:'material', name:'ลูกโป่ง', caption:'ลูกโป่ง', img: MATERIAL_IMG['ลูกโป่ง'] },
+{ type:'material', name:'บาสเก็ตบอล', caption:'บาสเก็ตบอล', img: MATERIAL_IMG['บาสเก็ตบอล'] },
+{ type:'material', name:'ลูกฟุตบอล', caption:'ลูกฟุตบอล', img: MATERIAL_IMG['ลูกฟุตบอล'] },
+{ type:'material', name:'ฟองน้ำ', caption:'ฟองน้ำ', img: MATERIAL_IMG['ฟองน้ำ'] },
+{ type:'material', name:'แทรมโพลีน', caption:'แทรมโพลีน', img: MATERIAL_IMG['แทรมโพลีน'] },
+{ type:'material', name:'สปริง', caption:'สปริง', img: MATERIAL_IMG['สปริง'] },
+{ type:'material', name:'เป็ดยาง', caption:'เป็ดยาง', img: MATERIAL_IMG['เป็ดยาง'] },
+{ type:'material', name:'รองเท้าแตะ', caption:'รองเท้าแตะ', img: MATERIAL_IMG['รองเท้าแตะ'] },
+{ type:'material', name:'ห่วงยาง', caption:'ห่วงยาง', img: MATERIAL_IMG['ห่วงยาง'] },
+{ type:'material', name:'หมวกว่ายน้ำ', caption:'หมวกว่ายน้ำ', img: MATERIAL_IMG['หมวกว่ายน้ำ'] },
+{ type:'material', name:'กระทะ', caption:'กระทะ', img: MATERIAL_IMG['กระทะ'] },
+{ type:'material', name:'แร่เงิน', caption:'แร่เงิน', img: MATERIAL_IMG['แร่เงิน'] },
+{ type:'material', name:'อลูมิเนียม', caption:'อลูมิเนียม', img: MATERIAL_IMG['อลูมิเนียม'] },
+{ type:'material', name:'สังกะสี', caption:'สังกะสี', img: MATERIAL_IMG['สังกะสี'] },
+{ type:'material', name:'แก้ว', caption:'แก้ว', img: MATERIAL_IMG['แก้ว'] },
+{ type:'material', name:'เซรามิก', caption:'เซรามิก', img: MATERIAL_IMG['เซรามิก'] },
+{ type:'material', name:'หม้อ', caption:'หม้อ', img: MATERIAL_IMG['หม้อ'] },
+{ type:'material', name:'กาต้มน้ำ', caption:'กาต้มน้ำ', img: MATERIAL_IMG['กาต้มน้ำ'] },
+{ type:'material', name:'ทองคำ', caption:'ทองคำ', img: MATERIAL_IMG['ทองคำ'] },
+{ type:'material', name:'กระป๋อง', caption:'กระป๋อง', img: MATERIAL_IMG['กระป๋อง'] },
+{ type:'material', name:'ขวดแก้ว', caption:'ขวดแก้ว', img: MATERIAL_IMG['ขวดแก้ว'] },
+{ type:'material', name:'สายไฟ', caption:'สายไฟ', img: MATERIAL_IMG['สายไฟ'] },
+{ type:'material', name:'น็อตสกรู', caption:'น็อตสกรู', img: MATERIAL_IMG['น็อตสกรู'] },
+{ type:'material', name:'โซ่', caption:'โซ่', img: MATERIAL_IMG['โซ่'] },
+{ type:'material', name:'กุญแจ', caption:'กุญแจ', img: MATERIAL_IMG['กุญแจ'] },
+{ type:'material', name:'ช้อน-ส้อม', caption:'ช้อน-ส้อม', img: MATERIAL_IMG['ช้อน-ส้อม'] },
+{ type:'material', name:'ไส้ดินสอ', caption:'ไส้ดินสอ', img: MATERIAL_IMG['ไส้ดินสอ'] },
+{ type:'material', name:'คลิปหนีบกระดาษ', caption:'คลิปหนีบกระดาษ', img: MATERIAL_IMG['คลิปหนีบกระดาษ'] },
+{ type:'material', name:'แม่เหล็ก', caption:'แม่เหล็ก', img: MATERIAL_IMG['แม่เหล็ก'] },
+{ type:'material', name:'ไม้เบสบอลเหล็ก', caption:'ไม้เบสบอลเหล็ก', img: MATERIAL_IMG['ไม้เบสบอลเหล็ก'] },
+{ type:'material', name:'แผงวงจร', caption:'แผงวงจร', img: MATERIAL_IMG['แผงวงจร'] },
+{ type:'material', name:'พลาสติก', caption:'พลาสติก', img: MATERIAL_IMG['พลาสติก'] },
+{ type:'material', name:'กระดาษ', caption:'กระดาษ', img: MATERIAL_IMG['กระดาษ'] },
+{ type:'material', name:'ผ้า', caption:'ผ้า', img: MATERIAL_IMG['ผ้า'] },
+{ type:'material', name:'กระโปรง', caption:'กระโปรง', img: MATERIAL_IMG['กระโปรง'] },
+{ type:'material', name:'กางเกงยีนส์', caption:'กางเกงยีนส์', img: MATERIAL_IMG['กางเกงยีนส์'] },
+{ type:'material', name:'เสื้อ', caption:'เสื้อ', img: MATERIAL_IMG['เสื้อ'] },
+{ type:'material', name:'ท่อ PVC', caption:'ท่อ PVC', img: MATERIAL_IMG['ท่อ PVC'] },
+{ type:'material', name:'กระเบื้อง', caption:'กระเบื้อง', img: MATERIAL_IMG['กระเบื้อง'] },
+{ type:'material', name:'ถุงมือกันความร้อน', caption:'ถุงมือกันความร้อน', img: MATERIAL_IMG['ถุงมือกันความร้อน'] },
+{ type:'material', name:'สไลม์', caption:'สไลม์', img: MATERIAL_IMG['สไลม์'] },
+{ type:'material', name:'น้ำ', caption:'น้ำ', img: MATERIAL_IMG['น้ำ'] },
+{ type:'material', name:'เค้ก', caption:'เค้ก', img: MATERIAL_IMG['เค้ก'] },
+{ type:'material', name:'ดิน', caption:'ดิน', img: MATERIAL_IMG['ดิน'] },
+{ type:'material', name:'ดินน้ำมัน', caption:'ดินน้ำมัน', img: MATERIAL_IMG['ดินน้ำมัน'] },
+{ type:'material', name:'น้ำแข็ง', caption:'น้ำแข็ง', img: MATERIAL_IMG['น้ำแข็ง'] },
+{ type:'material', name:'แป้ง', caption:'แป้ง', img: MATERIAL_IMG['แป้ง'] },
+{ type:'material', name:'ทราย', caption:'ทราย', img: MATERIAL_IMG['ทราย'] },
+{ type:'material', name:'น่องไก่', caption:'น่องไก่', img: MATERIAL_IMG['น่องไก่'] },
+{ type:'material', name:'เนื้อ', caption:'เนื้อ', img: MATERIAL_IMG['เนื้อ'] },
+    ],
+    correctIndices: [0, 11, 12, 13,  15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27,  49, 50, 51, 52, 53, 54, 55, 57],
+       scoreByIndex:{0:2, 15:3, 16:2, 17:2, 21:2, 22:2, 24:2, 25:2, 26:2, 27:2, 49:3, 51:2, 52:2, 53:2, 54:2, 55:3, 57:3,}
+  },
+];
+
+// ===== ด่าน 4: สมบัติทางกายภาพของวัสดุ (เหมือนด่าน 3 แต่อีกชุดคำถาม/คะแนน) =====
+const ANSWER_CHOICES = [
+  { type:'material', name:'ความแข็ง',     caption:'ความแข็ง',     img: MATERIAL_IMG['ความแข็ง'] },
+  { type:'material', name:'ความยืดหยุ่น', caption:'ความยืดหยุ่น', img: MATERIAL_IMG['ความยืดหยุ่น'] },
+  { type:'material', name:'นำความร้อน',   caption:'นำความร้อน',   img: MATERIAL_IMG['นำความร้อน'] },
+  { type:'material', name:'นำไฟฟ้า',       caption:'การนำไฟฟ้า',   img: MATERIAL_IMG['นำไฟฟ้า'] },
+  { type:'material', name:'ฉนวนไฟฟ้า',     caption:'ฉนวนไฟฟ้า',     img: MATERIAL_IMG['ฉนวนไฟฟ้า'] },
+  { type:'material', name:'ฉนวนความร้อน', caption:'ฉนวนความร้อน', img: MATERIAL_IMG['ฉนวนความร้อน'] },
+];
+
+// helper ทำให้สั้น
+const M = (name, correctIndices, scoreByIndex) => ({
+  questionText: name,
+  answers: ANSWER_CHOICES,
+  correctIndices,
+  scoreByIndex
+});
+
+// หมายเหตุสเกลคะแนนที่ใช้โดยประมาณ:
+// 3 = เด่นชัดมาก, 2 = เด่น/ปกติ
+
+const LEVEL4_BANK = [
+  // 0–10
+  M('ไม้',                 [0,4,5],                {0:2,4:2,5:3}),
+  M('เหล็ก',               [0,2,3],                {0:2,2:2,3:2}),
+  M('หิน',                 [0,2,4],                {0:2}),
+  M('โล่กัปตันอเมริกา',        [0,2,3],                {0:3,2:2,3:2}), 
+  M('รถถัง',               [0,2,3],                {0:3,2:2,3:2}),
+  M('ประแจเหล็ก',               [0,2,3],                {0:2,2:2,3:2}),
+  M('เพชร',                [0,2],                {0:3,2:3}), 
+  M('ทองแดง',              [0,2,3],                {2:2,3:2}),
+  M('ทองเหลือง',           [0,2,3],                {2:2,3:2}),
+
+  // 11–20
+  M('คอนกรีต',             [0,4,5],                {0:2,4:2,5:2}),
+  M('แร่ควอตซ์',           [0,],                {0:2}),
+  M('ฟัน',                 [0,],                  {0:2}),
+  M('อิฐ',                 [0,4],                {0:2,4:2}),
+  M('ยางรถ',               [1,4,5],                {1:3,4:3,5:3}),
+  M('ถุงมือยาง',           [1,4,5],                {1:2,4:3,5:3}),
+  M('หนังยาง',             [1,4,5],                {1:3,4:3,5:3}),
+  M('ลูกโป่ง',             [1,4],                {1:2,4:2}),
+  M('บาสเก็ตบอล',          [1,4],                {4:2}),
+  M('ลูกฟุตบอล',           [1,4],                {4:2}),
+
+  // 21–30
+  M('ฟองน้ำ',              [1,4,5],                {1:2}),
+  M('แทรมโพลีน',           [1,4,5],                {1:2}),
+  M('สปริง',               [0,2,3],                {2:2}), 
+  M('เป็ดยาง',             [1,4,5],                {4:2,5:2}),
+  M('รองเท้าแตะ',          [1,4,5],                {4:3,5:3}),
+  M('ห่วงยาง',             [1,4,5],                {4:2,5:2}),
+  M('หมวกว่ายน้ำ',         [1,4,5],                {4:2,5:2}),
+  M('กระทะ',               [0,2,3],                {2:2,3:2}),
+  M('แร่เงิน',             [0,2,3],                {2:2,3:3}),
+  M('อลูมิเนียม',          [2,3],                {2:2,3:2}),
+
+  // 31–40
+  M('สังกะสี',             [2,3],                {2:2,3:2}),
+  M('แก้ว',                [2,4],                {2:2}),
+  M('เซรามิก',             [0,2,4],                {2:2}),
+  M('หม้อ',                [2,3],                {2:2,3:2}),
+  M('กาต้มน้ำ',            [2,3],                {2:2,3:2}),
+  M('ทองคำ',               [2,3],                {2:3,3:3}),
+  M('กระป๋อง',             [2,3],                {2:2,3:2}), 
+  M('ขวดแก้ว',             [4],                {4:2}),
+  M('สายไฟ',               [3],                  {3:2}), 
+  M('น็อตสกรู',            [0,2,3],                {2:2,3:2}),
+
+  // 41–50
+  M('โซ่',                 [0,2,3],                {0:2,2:2,3:2}),
+  M('กุญแจ',               [0,2,3],                {2:2,3:2}),
+  M('ช้อน-ส้อม',           [0,2,3],                {2:3,3:2}),
+  M('ไส้ดินสอ',            [3],                    {5:2}),
+  M('คลิปหนีบกระดาษ',     [0,2,3],                {2:2,3:2}),
+  M('แม่เหล็ก',            [0,2,3],                {2:2,3:2}),
+  M('ไม้เบสบอลเหล็ก',      [0,2,3],                {0:2,2:2,3:2}),
+  M('พลาสติก',             [4,5],                  {4:3,5:3}),
+  M('กระดาษ',              [4,5],                  {4:2,5:2}),
+
+  // 51–57
+  M('ผ้า',                 [4,5],                  {4:2,5:2}),
+  M('กระโปรง',             [4,5],                  {4:2,5:2}),
+  M('กางเกงยีนส์',         [4,5],                  {4:2,5:2}),
+  M('เสื้อ',               [4,5],                  {4:2,5:2}),
+  M('ท่อ PVC',             [4,5],                  {4:3,5:3}),
+  M('กระเบื้อง',           [4,5],                {4:2,5:2}),
+  M('ถุงมือกันความร้อน',   [4,5],                  {4:2,5:3}),
+];
+
+
+// ลำดับวัสดุอ้างอิงให้ตรงกับที่ใช้ใน LEVEL3_BANK
+const MATERIAL_ORDER = [
+  'ไม้','เหล็ก','หิน','โล่','โล่กัปตันอเมริกา','รถถัง','ชุดเกราะ','ประแจ','เพชร','ทองแดง',
+  'ทองเหลือง','คอนกรีต','แร่ควอตซ์','ฟัน','อิฐ','ยางรถ','ถุงมือยาง','หนังยาง','ลูกโป่ง','บาสเก็ตบอล',
+  'ลูกฟุตบอล','ฟองน้ำ','แทรมโพลีน','สปริง','เป็ดยาง','รองเท้าแตะ','ห่วงยาง','หมวกว่ายน้ำ','กระทะ','แร่เงิน',
+  'อลูมิเนียม','สังกะสี','แก้ว','เซรามิก','หม้อ','กาต้มน้ำ','ทองคำ','กระป๋อง','ขวดแก้ว','สายไฟ',
+  'น็อตสกรู','โซ่','กุญแจ','ช้อน-ส้อม','ไส้ดินสอ','คลิปหนีบกระดาษ','แม่เหล็ก','ไม้เบสบอลเหล็ก','แผงวงจร','พลาสติก',
+  'กระดาษ','ผ้า','กระโปรง','กางเกงยีนส์','เสื้อ','ท่อ PVC','กระเบื้อง','ถุงมือกันความร้อน','สไลม์','น้ำ',
+  'เค้ก','ดิน','ดินน้ำมัน','น้ำแข็ง','แป้ง','ทราย','น่องไก่','เนื้อ',
+];
+
+
+function drawLevel3(){ 
+  const q = pick(LEVEL3_BANK);
+
+  // ใช้วัสดุตาม MATERIAL_ORDER (ของด่าน 3)
+  const allChoices = MATERIAL_ORDER.map(name => ({
+    type: 'material',
+    name, caption: name, img: MATERIAL_IMG[name]
+  }));
+  const maxIndex = allChoices.length - 1;
+
+  let correctGlobal = Array.isArray(q.correctIndices)
+    ? [...new Set(q.correctIndices.filter(i => Number.isInteger(i) && i>=0 && i<=maxIndex))]
+    : [];
+
+  if (correctGlobal.length === 0) {
+    correctGlobal = [Math.floor(Math.random()*allChoices.length)];
+  }
+
+  const SAMPLE_SIZE = 3;
+
+  // เลือกคำตอบถูก 1 อันไว้ก่อน
+  const selected = new Set([ pick(correctGlobal) ]);
+
+  // ★ บังคับให้เหลือที่ว่างสำหรับ "ตัวผิด" อย่างน้อย 1 อัน
+  let slotsLeft = SAMPLE_SIZE - selected.size;
+  const extraMax  = Math.max(0, slotsLeft - 1);         // ← เว้น 1 ที่ให้ตัวหลอก
+  const extraTake = rand(0, extraMax);                  // 0..(slotsLeft-1)
+  shuffle(correctGlobal.filter(i => !selected.has(i)))
+    .slice(0, extraTake)
+    .forEach(i => selected.add(i));
+
+  // เติมตัวหลอกให้ครบ 3 ปุ่ม
+  slotsLeft = SAMPLE_SIZE - selected.size;
+  const allIncorrect = [];
+  for (let i=0;i<=maxIndex;i++){ if(!correctGlobal.includes(i)) allIncorrect.push(i); }
+  shuffle(allIncorrect).slice(0, slotsLeft).forEach(i => selected.add(i));
+
+  // ★ SAFETY: ถ้าบังเอิญยังมีแต่คำตอบถูกล้วน และยังมีตัวหลอกเหลือ → บังคับสลับ 1 อัน
+  if ([...selected].every(i => correctGlobal.includes(i)) && allIncorrect.length){
+    const toReplace = pick([...selected]);
+    selected.delete(toReplace);
+    selected.add(pick(allIncorrect));
+  }
+
+  const idxs = shuffle([...selected]);
+  const answers = idxs.map(i => allChoices[i]);
+  const correctIndices = idxs.map((i,pos)=> correctGlobal.includes(i) ? pos : -1).filter(pos=>pos!==-1);
+
+  // map คะแนน (global → local)
+  const scoreMapLocal = {};
+  if (q.scoreByIndex && typeof q.scoreByIndex==='object'){
+    for (const [gStr, ptsRaw] of Object.entries(q.scoreByIndex)){
+      const g = Number(gStr);
+      const local = idxs.indexOf(g);
+      if (local !== -1){
+        const pts = Number(ptsRaw);
+        scoreMapLocal[local] = Number.isFinite(pts) ? pts : 1;
+      }
+    }
+  }
+
+  return { questionText: q.questionText, answers, correctIndices, scoreMap: scoreMapLocal };
+}
+
+
+function drawLevel4(){
+  const q = pick(LEVEL4_BANK);
+
+  // ★ ด่าน 4 ใช้ช้อยส์ “ตามที่นิยามไว้ในข้อ” ไม่ไปดึง MATERIAL_ORDER
+  const allChoices = q.answers;
+  const maxIndex = allChoices.length - 1;
+
+  let correctGlobal = Array.isArray(q.correctIndices)
+    ? [...new Set(q.correctIndices.filter(i => Number.isInteger(i) && i>=0 && i<=maxIndex))]
+    : [];
+
+  if (correctGlobal.length === 0) correctGlobal = [Math.floor(Math.random()*allChoices.length)];
+
+  const SAMPLE_SIZE = 3;
+
+  // เลือกคำตอบถูก 1 อันไว้ก่อน
+  const selected = new Set([ pick(correctGlobal) ]);
+
+  // ★ บังคับให้เหลือที่ว่างสำหรับ "ตัวผิด" อย่างน้อย 1 อัน
+  let slotsLeft = SAMPLE_SIZE - selected.size;
+  const extraMax  = Math.max(0, slotsLeft - 1);
+  const extraTake = rand(0, extraMax);
+  shuffle(correctGlobal.filter(i => !selected.has(i)))
+    .slice(0, extraTake)
+    .forEach(i => selected.add(i));
+
+  // เติมตัวหลอกให้ครบ
+  slotsLeft = SAMPLE_SIZE - selected.size;
+  const allIncorrect = [];
+  for (let i=0;i<=maxIndex;i++){ if(!correctGlobal.includes(i)) allIncorrect.push(i); }
+  shuffle(allIncorrect).slice(0, slotsLeft).forEach(i => selected.add(i));
+
+  // ★ SAFETY
+  if ([...selected].every(i => correctGlobal.includes(i)) && allIncorrect.length){
+    const toReplace = pick([...selected]);
+    selected.delete(toReplace);
+    selected.add(pick(allIncorrect));
+  }
+
+  const idxs = shuffle([...selected]);
+  const answers = idxs.map(i => allChoices[i]);
+  const correctIndices = idxs.map((i,pos)=> correctGlobal.includes(i) ? pos : -1).filter(pos=>pos!==-1);
+
+  // map คะแนน (global → local)
+  const scoreMapLocal = {};
+  if (q.scoreByIndex && typeof q.scoreByIndex==='object'){
+    for (const [gStr, ptsRaw] of Object.entries(q.scoreByIndex)){
+      const g = Number(gStr);
+      const local = idxs.indexOf(g);
+      if (local !== -1){
+        const pts = Number(ptsRaw);
+        scoreMapLocal[local] = Number.isFinite(pts) ? pts : 1;
+      }
+    }
+  }
+
+  return { questionText: q.questionText, answers, correctIndices, scoreMap: scoreMapLocal };
+}
+
+
+
+// ด่าน 1: วัสดุ -> เลือกวัตถุ (คำตอบถูกมาจาก LEVEL1_BINDINGS, ตัวหลอกจาก OBJECTS)
+function drawLevel1(){
+  const keys = Object.keys(LEVEL1_BINDINGS);
+  const material = pick(keys);
+
+  const correct = pick(LEVEL1_BINDINGS[material]);
+
+  // ตัวหลอกจากวัสดุอื่น
+  const fakes = shuffle(
+      keys.filter(k => k !== material)
+  ).slice(0,2).map(k => pick(LEVEL1_BINDINGS[k]));
+
+  const candidates = shuffle([
+      { ...correct, _ok:true },
+      ...fakes
+  ]);
+  const correctIndex = candidates.findIndex(c => c._ok);
+
+  return {
+    questionText: material,
+    answers: candidates.map(c => ({
+      type: 'object',
+      name: c.caption,
+      img:  c.img,
+      tag:  material,
+      caption: c.caption
+    })),
+    correctIndex
+  };
+}
+
+
+// ด่าน 2: วัตถุ -> เลือกวัสดุ (คำตอบถูกมาจาก LEVEL2_BINDINGS, ตัวหลอกจาก MATERIAL_IMG อื่น ๆ)
+function drawLevel2(){
+  const obj = pick(OBJECTS);
+  const question = obj.name;            // โจทย์ = ชื่อวัตถุ
+  const correctMat = obj.material;
+
+  // รูป/แคปชัน "ถูกต้อง" จากแมปปิง (ถ้าไม่ระบุในแมป ให้ fallback เป็นรูปวัสดุ + caption=ชื่อวัสดุ)
+  let correct = LEVEL2_BINDINGS[question];
+  if(!correct){
+    correct = { img: MATERIAL_IMG[correctMat], caption: correctMat };
+  }
+
+  // ตัวหลอกจากวัสดุอื่น ๆ (ใช้ MATERIAL_IMG) 2 ชิ้น
+  const mats = Object.keys(MATERIAL_IMG).filter(m=>m!==correctMat);
+  const distract = shuffle(mats).slice(0,2).map(m=>({ img: MATERIAL_IMG[m], caption: m }));
+
+  // รวม + สุ่มตำแหน่ง
+  const candidates = shuffle([ {img:correct.img, caption:correct.caption, _ok:true}, ...distract ]);
+  const correctIndex = candidates.findIndex(c=>c._ok);
+
+  return {
+    questionText: question,             // โจทย์ = ชื่อวัตถุ (ไปโชว์วิ่งล่าง)
+    answers: candidates.map(c=>({
+      type:'material',
+      name: c.caption,                  // ใช้เป็น alt ด้วย
+      img:  c.img,
+      tag:  c.caption,                  // เก็บชื่อวัสดุไว้
+      caption: c.caption                // ← แคปชันใต้รูป (ไม่ผูกกับคำถาม)
+    })),
+    correctIndex
+  };
+}
+
+
+// =========================
+// พรีโหลดรูปภาพ (รองรับ fail แล้วไปต่อ)
+// =========================
+const __imgMemo = new Map();
+function preloadOne(src, timeout=8000, tries=2){
+  if(!src) return Promise.resolve(false);
+  if(__imgMemo.has(src)) return __imgMemo.get(src);
+  const runner = (attempt)=> new Promise(resolve=>{
+    const img = new Image(); let done=false;
+    const settle = ok=>{ if(done) return; done=true; resolve(ok); };
+    const t = setTimeout(()=>{ img.onload=img.onerror=null; settle(false) }, timeout);
+    img.onload = ()=>{ clearTimeout(t); settle(true) };
+    img.onerror= ()=>{ clearTimeout(t); (attempt<tries)? setTimeout(()=>runner(attempt+1).then(resolve), 250): settle(false) };
+    img.decoding='async'; img.loading='eager'; img.referrerPolicy='no-referrer'; img.src=src;
+  });
+  const p=runner(0); __imgMemo.set(src,p); return p;
+}
+async function preloadInBatches(urls,batch=16,onProgress=()=>{}){
+  const list=[...new Set(urls.filter(Boolean))]; let done=0;
+  for(let i=0;i<list.length;i+=batch){
+    const chunk=list.slice(i,i+batch);
+    await Promise.allSettled(chunk.map(u=>preloadOne(u)));
+    done+=chunk.length; onProgress(Math.round((done/list.length)*100));
+    await new Promise(r=>setTimeout(r,60));
+  }
+}
+
+function collectAllGameImages(){
+  const urls=[];
+  Object.values(LEVEL1_BINDINGS).forEach(arr =>
+      arr.forEach(item => urls.push(item.img))
+  );
+  // เพิ่มภาพพื้นหลัง/แบนเนอร์อื่น ๆ แบบระบุครบ ห้ามใช้ …
+  urls.push(
+    "image/background2.png",
+    "image/banner2.png",
+    "image/welcome.png",
+    "image/guide.png",
+    "image/button1.png",
+    "image/button2.png",
+    "objects2/object0.png" 
+  );
+  return urls.map(p=>new URL(p,location.href).href);
+}
+
+function bindPreloadProgress(){
+  const bar  = document.getElementById('preloadBar');
+  const text = document.getElementById('preloadText');
+  return (pct)=>{ if(bar) bar.style.width=pct+'%'; if(text) text.textContent='กำลังเตรียมข้อมูล… '+pct+'%'; };
+}
+async function runGlobalPreload(){
+  const urls=collectAllGameImages(); const progress=bindPreloadProgress();
+  try{ await preloadInBatches(urls,18,(p)=>progress(p)) }finally{
+    document.getElementById('preloadOverlay')?.remove();
+    window.__ALL_IMAGES_READY__=true;
+  }
+}
+window.addEventListener('load', runGlobalPreload);
+
+// =========================
+// สร้างรอบคำถาม/แสดงตัวเลือก
+// =========================
+function clearChoices(){
+  while(choicesRow.firstChild) choicesRow.removeChild(choicesRow.firstChild);
+}
+
+// ==== STOP marquee safely (ฆ่าแอนิเมชัน + กัน callback เก่า) ====
+let __mqToken = 0;
+function stopMarquee(){
+  __mqToken++; // ทำให้ callback เก่ากลายเป็นโมฆะ
+  const span = qBox.querySelector('.mq');
+  if (!span) return;
+  span.style.animation = 'none';
+  span.style.transition = 'none';
+  span.style.opacity = '0';
+  span.remove();
+}
+
+// ==== เล่นเอฟเฟกต์ย่อเล็กลงแล้วเคลียร์ทุกช้อยส์ ====
+function vanishAllChoices(ms = 420){
+  choicesRow.style.setProperty('--vanish-ms', (ms|0)+'ms');
+  const wraps = [...choicesRow.querySelectorAll('.option-wrap')];
+  if (!wraps.length){ clearChoices(); return; }
+
+  // ล้างคลาสที่อาจชน transition/animation เดิม แล้วบังคับรีโฟลว์ก่อนใส่ .is-vanish
+  wraps.forEach(w=>{
+    w.classList.remove('chosen','faded','is-chosen','is-faded');
+    const c = w.querySelector('.option.circle');
+    if (c){
+      c.classList.remove('pre-in','go-in','pick-pop','slide-up-out');
+      // รีโฟลว์เพื่อให้อนิเมชันใหม่เริ่มแน่ๆ
+      void c.offsetWidth;
+    }
+  });
+
+  // ใส่อนิเมชัน “ย่อแล้วหาย” ให้ทั้งกล่อง
+  requestAnimationFrame(()=>{
+    wraps.forEach(w=> w.classList.add('is-vanish'));
+  });
+
+  // เคลียร์จริงหลังอนิเมชันจบ
+  setTimeout(()=>{ clearChoices(); }, ms);
+}
+
+
+function randomRing(el){
+  const colors = [
+    ['#ef4444','#f59e0b'], ['#3b82f6','#06b6d4'], ['#22c55e','#84cc16'],
+    ['#a855f7','#ec4899'], ['#f97316','#eab308']
+  ];
+  const [a,b]=pick(colors);
+  el.style.setProperty('--ring', `linear-gradient(130deg, ${a}, ${b})`);
+}
+
+function spawnRow3(answers, correctIndex, questionText){
+  clearChoices();
+
+  answers.forEach((ans,idx)=>{
+    // กล่องครอบ: เพื่อวาง "วงกลม" + "แคปชันใต้รูป"
+    const wrap = document.createElement('div');
+    wrap.className = 'option-wrap';
+
+    // ปุ่มวงกลม (ของเดิม)
+    const el = document.createElement('div');
+    el.className = 'option circle pre-in';
+    randomRing(el);
+
+    const im = document.createElement('img');
+    im.alt = (ans.type==='object' ? 'วัตถุ' : 'วัสดุ') + ' : ' + (ans.name||'');
+    im.src = ans.img || '';
+    el.appendChild(im);
+
+    // dataset สำหรับตรวจถูก/ผิด
+    el.dataset.correct = String(idx===correctIndex);
+    el.dataset.index = String(idx);
+    el.addEventListener('click', ()=>tryAnswer(el));
+
+    // แคปชันใต้รูป (ไม่ผูกกับคำถาม)
+    const cap = document.createElement('div');
+    cap.className = 'opt-cap';
+    cap.textContent = String(ans.caption || ans.name || '');
+
+    // ประกอบเข้าด้วยกัน
+    wrap.appendChild(el);
+    wrap.appendChild(cap);
+    choicesRow.appendChild(wrap);
+
+    // เข้าเฟรมทีละปุ่ม
+    setTimeout(()=>{ el.classList.add('go-in'); }, 80*idx);
+  });
+
+  // คำถามล่างจอให้ใช้ตัวที่ส่งมาโดยตรง
+  setQuestionMarquee(String(questionText || ''));
+}
+
+// ===== ด่าน 3: สร้าง 3 ปุ่ม + รองรับหลายคำตอบถูก =====
+function spawnRow3Multi(answers, correctIndices, questionText, scoreMap = {}){
+  clearChoices();
+
+  __multiCorrectSet = new Set(correctIndices);
+  remainingCorrect = new Set(correctIndices);
+    
+  // ★ เก็บคำตอบรอบนี้และคะแนนต่อ index ไว้ใช้ตอนกด
+  window.__L3_CURRENT_ANSWERS = answers;
+  window.__L3_SCORE_MAP = scoreMap || {};
+
+  answers.forEach((ans, idx)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'option-wrap';
+
+    const el = document.createElement('div');
+    el.className = 'option circle pre-in';
+    randomRing(el);
+
+    const im = document.createElement('img');
+    im.alt = (ans.type==='object' ? 'วัตถุ' : 'วัสดุ') + ' : ' + (ans.name||'');
+    im.src = ans.img || '';
+    el.appendChild(im);
+
+    el.dataset.index = String(idx);
+    el.addEventListener('click', ()=>tryAnswerMulti(el));
+
+    const cap = document.createElement('div');
+    cap.className = 'opt-cap';
+    cap.textContent = String(ans.caption || ans.name || '');
+
+    wrap.appendChild(el);
+    wrap.appendChild(cap);
+    choicesRow.appendChild(wrap);
+
+    setTimeout(()=>{ el.classList.add('go-in'); }, 80*idx);
+  });
+
+  setQuestionMarquee(String(questionText || ''));
+}
+
+// ===== ตรวจคำตอบแบบหลายตัวถูก =====
+function tryAnswerMulti(el){
+  if (ended || !awaitingAnswer) return;
+
+  const idx  = Number(el.dataset.index);
+  const ok   = __multiCorrectSet.has(idx);
+  const wrap = el.closest('.option-wrap');
+
+  // กันกดซ้ำ + ปิดรับคำตอบทันที
+  if (el.classList.contains('answered')) return;
+  el.classList.add('answered');
+  awaitingAnswer = false;
+
+  // เอฟเฟกต์เลือก + เร่งคำถามออกซ้าย + เฟดตัวอื่น
+  boostQuestionOutFast(280);
+  [...choicesRow.querySelectorAll('.option-wrap')].forEach(w=>{
+    if (w === wrap) w.classList.add('is-chosen');
+    else            w.classList.add('is-faded');
+  });
+
+  // ★ คะแนนแบบเจาะจงรายคำถาม (อิงตำแหน่งปุ่มหลังสุ่ม)
+  if (ok){
+    const pts = Number((window.__L3_SCORE_MAP || {})[idx] ?? 1);
+    score += Number.isFinite(pts) ? pts : 1;
+
+    playSfx(selectSound, VOL_SELECT);
+    playSfx(hitSound,    VOL_HIT);
+    flyScore(true);
+
+    // ⬇️ แสดงอีโมจิ: ได้ 2 คะแนน → 👍, ได้ 3 คะแนน → ❤️
+    if (pts === 2)      showEmojiBurst('👍', 120, 1000);  // (ขนาด, ระยะเวลา)
+    else if (pts === 3) showEmojiBurst('❤️', 120, 1000);
+  }else{
+
+    score -= 1; // ผิดยัง -1
+    playSfx(wrongSound, VOL_WRONG);
+    flyScore(false);
+  }
+  renderGold(score);
+
+
+  // เคลียร์จอแล้วรอไปข้อถัดไป (ผ่านปุ่ม NEXT โปร่งใส)
+  setTimeout(()=>{
+    clearChoices();
+    qBox.textContent = '';
+    awaitingContinue = true;
+    qDecor?.classList.add('arm-next');
+    syncFastNextUI();
+  }, 520);
+
+  // ถ้าต้องการ "ไปข้อถัดไปเองเลย" ให้แทนบล็อกด้านบนด้วย:
+  // setTimeout(()=> { clearChoices(); qBox.textContent=''; nextRound(); }, 520);
+}
+
+
+
+function tryAnswer(el){
+  if(ended||!awaitingAnswer) return;
+  awaitingAnswer=false;
+  const ok = (el.dataset.correct==='true');
+
+
+  // เอฟเฟกต์เลือก
+  el.classList.remove('go-in'); el.classList.add('pick-pop');
+  // ที่เหลือเลื่อนขึ้น
+  // ที่เหลือเลื่อนขึ้น (เลือกเฉพาะ .option.circle)
+[...choicesRow.querySelectorAll('.option.circle')].forEach(n=>{
+  if(n!==el){
+    n.classList.remove('go-in');
+    n.classList.add('slide-up-out');
+  }
+});
+
+  // ให้แคปชันหายตามวง
+  const chosenWrap = el.closest('.option-wrap');
+  chosenWrap?.classList.add('chosen');
+  choicesRow.querySelectorAll('.option-wrap').forEach(w=>{
+    if (w !== chosenWrap) w.classList.add('faded');
+  });
+
+  playSfx(selectSound);
+  playSfx(hitSound);
+
+  // คะแนน
+  score += ok ? 1 : -1; renderGold(score); flyScore(ok);
+
+  // ไปข้อถัดไปหลังเอฟเฟกต์สั้น ๆ
+  setTimeout(()=>{ nextRound(); }, 620);
+}
+
+function tryAnswer(el){
+  if (ended || !awaitingAnswer) return;
+  awaitingAnswer = false;
+  choicesRow.style.pointerEvents = 'none';
+  const ok = (el.dataset.correct==='true');
+
+  // เร่งข้อความคำถามให้ออกซ้ายอย่างไว (ทั้งถูก/ผิด)
+  boostQuestionOutFast(280); // ปรับเป็น 200-350 ได้ตามใจ
+
+  // ใส่คลาสอนิเมชันให้ "ทั้งชุด" (วงกลม+แคปชัน)
+  const chosenWrap = el.closest('.option-wrap');
+  [...choicesRow.querySelectorAll('.option-wrap')].forEach(w=>{
+    w.querySelector('.option.circle')?.classList.remove('go-in');
+    if (w === chosenWrap) w.classList.add('is-chosen');
+    else                 w.classList.add('is-faded');
+  });
+
+  if (ok) {
+    playSfx(selectSound, VOL_SELECT);
+    playSfx(hitSound,    VOL_HIT);
+  } else {
+    playSfx(wrongSound,  VOL_WRONG);
+  }
+
+  score += ok ? 1 : -1;
+  renderGold(score);
+  flyScore(ok);
+
+  // ไปข้อถัดไปหลังเอฟเฟกต์จบ (ไม่แตะ/ไม่เล่นเอฟเฟกต์กับคำถามล่างอีก)
+// ไปต่อแบบ "กดเพื่อไปต่อ" และเก็บจอให้สะอาด
+setTimeout(()=>{
+  choicesRow.style.pointerEvents = '';
+  clearChoices();                  // ← ล้างวงกลมคำตอบที่เฟดออกแล้ว
+  // ข้อความล่างเราบูสต์ออกไปแล้วใน boostQuestionOutFast(); ถ้ายังเหลือให้เคลียร์ซ้ำ
+  qBox.textContent = '';           // ← กันเด้งมุมซ้ายล่าง
+
+  awaitingContinue = true;
+  qDecor?.classList.add('arm-next');
+  syncFastNextUI();
+}, 520);
+}
+
+
+// ดึงโจทย์ตามด่าน
+function drawQuestion(){
+  if (window.currentLevel===1) return drawLevel1();
+  if (window.currentLevel===2) return drawLevel2();
+  if (window.currentLevel===3) return drawLevel3();
+  if (window.currentLevel===4) return drawLevel4();
+  return drawLevel3(); // fallback
+}
+
+
+
+// รัน 1 ข้อ
+function nextRound(){
+  if(ended) return;
+  clearChoices(); awaitingAnswer=false;
+  qBox.classList.remove('go-x','pre-x');
+  // กันตัววิ่ง/แอนิเมชันรอบเก่ากลับมาอีก
+  stopMarquee();
+
+// โหลดโจทย์
+const q = drawQuestion();
+
+// ด่าน 1–2 = คำตอบเดียว / ด่าน 3–4 = หลายคำตอบ
+if (window.currentLevel === 3 || window.currentLevel === 4){
+  spawnRow3Multi(q.answers, q.correctIndices, q.questionText, q.scoreMap);
+} else {
+  spawnRow3(q.answers, q.correctIndex, q.questionText);
+}
+
+awaitingAnswer = true;
+}
+
+// =========================
+// วงจรเกม: เริ่ม/หยุด/สรุป
+// =========================
+function scheduleGameTimer(ms){
+  clearTimeout(gameTimerId);
+  gameTimerId=setTimeout(()=>{ if(!ended) endLevel() }, Math.max(0,ms|0));
+}
+function startGameTimer(){
+  remainingMs = GAME_DURATION_MS;
+  gameEndAt = performance.now() + remainingMs;
+  scheduleGameTimer(remainingMs);
+  startClockUI();
+}
+function pauseGameTimer(){
+  if(gameTimerId){
+    remainingMs=Math.max(0,gameEndAt - performance.now());
+    clearTimeout(gameTimerId); gameTimerId=null;
+    pauseClockUI();
+  }
+}
+function resumeGameTimer(){
+  if(remainingMs>0 && !ended){
+    gameEndAt = performance.now() + remainingMs;
+    scheduleGameTimer(remainingMs);
+    startClockUI();
+  }
+}
+
+function startGame(){
+  (async()=>{ while(!window.__ALL_IMAGES_READY__) await new Promise(r=>setTimeout(r,120)); })();
+  document.body.classList.add('in-game');
+  running=true; ended=false; paused=false;
+  overlay.style.visibility='hidden'; overlay.style.opacity='0';
+  score=0; round=0; renderGold(score);
+   awaitingContinue = false;
+   qDecor?.classList.remove('arm-next');
+syncFastNextUI();
+  bgm?.play?.().catch(()=>{});
+  startGameTimer();
+  nextRound();
+}
+function endLevel(){
+  ended=true; running=false; pauseGameTimer(); stopClockUI();
+  finalScoreEl.textContent=String(score);
+  document.getElementById('scoreBadge').textContent = score<=5?'❤️':score<=10?'🥇':'🏆';
+  bgm?.pause?.(); playSfx(winSound);
+qBox.textContent = '';     // ← ล้างข้อความคำถาม
+clearChoices();            // ← ล้างวงกลมคำตอบ
+
+  overlay.style.visibility='visible'; overlay.style.opacity='1';
+}
+function resetState(){
+  clearChoices(); awaitingAnswer=false; awaitingContinue=false; qDecor?.classList.remove('arm-next');
+syncFastNextUI();
+  qBox.textContent=''; qBox.classList.remove('go-x','pre-x');
+  score=0; renderGold(score); remainingMs=GAME_DURATION_MS; stopClockUI(); clockEl.textContent='02:00';
+  ended=true; running=false; paused=false;
+}
+
+// ปุ่มควบคุม
+pauseBtn?.addEventListener('click', ()=>{
+  if(!running||ended) return;
+  if(!paused){ paused=true; pauseGameTimer(); pauseBtn.textContent='▶️ ต่อ'; }
+  else { paused=false; resumeGameTimer(); pauseBtn.textContent='⏸ หยุด'; bgm?.play?.().catch(()=>{}); }
+});
+document.getElementById('quickRestart')?.addEventListener('click', ()=>{
+
+// ถ้ากำลังอยู่หน้าเริ่ม/นับถอยหลัง ให้ปิดและหยุดนับทันที
+if (window.__countdownItv) {
+  clearInterval(window.__countdownItv);
+  window.__countdownItv = null;
+}
+const startScreen  = document.getElementById('startScreen');
+const countdownEl  = document.getElementById('countdown');
+const startBtn     = document.getElementById('startBtn');
+if (startScreen)  startScreen.style.display = 'none';
+if (countdownEl){ countdownEl.style.display='none'; countdownEl.textContent='3'; }
+if (startBtn){ startBtn.style.display='inline-block'; startBtn.disabled=false; startBtn.style.pointerEvents='auto'; }
+document.body.classList.remove('prestart');
+document.getElementById('questionBox')?.querySelector('.mq')?.style.setProperty('animation-play-state', paused ? 'paused' : 'running');
+  document.getElementById('landing').classList.remove('hide');
+  overlay.style.visibility='hidden'; overlay.style.opacity='0';
+  resetState(); document.body.classList.remove('in-game');
+});
+
+restartBtn.addEventListener('click', ()=>{ overlay.style.visibility='hidden'; overlay.style.opacity='0'; resetState(); startGame(); bgm.currentTime=0; bgm.play().catch(()=>{}); });
+selectLevelBtn.addEventListener('click', ()=>{
+// ถ้ากำลังอยู่หน้าเริ่ม/นับถอยหลัง ให้ปิดและหยุดนับทันที
+if (window.__countdownItv) {
+  clearInterval(window.__countdownItv);
+  window.__countdownItv = null;
+}
+const startScreen  = document.getElementById('startScreen');
+const countdownEl  = document.getElementById('countdown');
+const startBtn     = document.getElementById('startBtn');
+if (startScreen)  startScreen.style.display = 'none';
+if (countdownEl){ countdownEl.style.display='none'; countdownEl.textContent='3'; }
+if (startBtn){ startBtn.style.display='inline-block'; startBtn.disabled=false; startBtn.style.pointerEvents='auto'; }
+document.body.classList.remove('prestart');
+
+  overlay.style.visibility='hidden'; overlay.style.opacity='0';
+  resetState(); document.body.classList.remove('in-game');
+  document.getElementById('landing').classList.remove('hide'); bgm.currentTime=0; bgm.play().catch(()=>{});
+});
+
+// =========================
+// Welcome → Landing → Start
+// =========================
+(function(){
+  const welcome = document.getElementById('welcome');
+  const enterBtn = document.getElementById('enterBtn');
+  const landing = document.getElementById('landing');
+  enterBtn.addEventListener('click', async ()=>{
+    while(!window.__ALL_IMAGES_READY__) await new Promise(r=>setTimeout(r,120));
+    welcome.classList.add('hide'); landing.classList.remove('hide'); bgm?.play?.().catch(()=>{});
+  });
+})();
+
+(function(){
+  const landing = document.getElementById('landing');
+  const startScreen = document.getElementById('startScreen');
+  const guideScreen = document.getElementById('guideScreen');
+  const startBtn = document.getElementById('startBtn');
+  const countdownEl = document.getElementById('countdown');
+
+  document.querySelectorAll('.levelBtn').forEach(btn=>{
+    if(btn.id==='guideBtn') return;
+    btn.addEventListener('click', ()=>{
+      window.currentLevel = Number(btn.dataset.level||1);
+      landing.classList.add('hide');
+      document.body.classList.add('prestart');
+      startScreen.style.display='flex';
+      // สรุปภารกิจตามด่าน
+      const st = document.getElementById('startTitle');
+
+
+st.textContent =
+  (window.currentLevel===1)
+    ? 'ภารกิจ : นำวัสดุจากสายพานไปสร้างวัตถุให้ถูกต้อง'
+    : (window.currentLevel===2)
+      ? 'ภารกิจ: เลือกวัสดุให้สอดคล้องกับวัตถุบนสายพาน'
+      : (window.currentLevel===3)
+        ? 'ภารกิจ: เลือกวัสดุที่มีสมบัติทางกายภาพตามที่กำหนด'
+        : 'ภารกิจ: เลือกสมบัติทางกายภาพให้สอดคล้องกับวัสดุ';
+
+
+      // ปุ่มเริ่ม / นับถอยหลัง
+      startBtn.style.display='inline-block'; startBtn.disabled=false; startBtn.style.pointerEvents='auto';
+      countdownEl.style.display='none'; countdownEl.textContent='3';
+    });
+  });
+
+  document.getElementById('guideBtn')?.addEventListener('click', ()=>{ landing.classList.add('hide'); guideScreen.style.display='flex' });
+  document.getElementById('guideBack')?.addEventListener('click', ()=>{ guideScreen.style.display='none'; landing.classList.remove('hide') });
+
+// เริ่มเกม + นับถอยหลัง 3..2..1
+let countdownItv=null; // ← ของเดิมมีอยู่ ให้ลบหรือคอมเมนต์ทิ้งไป
+
+// === ใส่ของใหม่แทน ===
+window.__countdownItv = null;
+function clearCountdown(){
+  if(window.__countdownItv){
+    clearInterval(window.__countdownItv);
+    window.__countdownItv = null;
+  }
+  countdownEl.style.display='none'; countdownEl.textContent='3';
+  startBtn.style.display='inline-block'; startBtn.disabled=false; startBtn.style.pointerEvents='auto';
+}
+function runCountdown(){
+  startBtn.disabled=true; startBtn.style.pointerEvents='none'; startBtn.style.display='none';
+  let n=3; countdownEl.textContent=n; countdownEl.style.display='block';
+  window.__countdownItv = setInterval(()=>{
+    n--;
+    if(n>0){ countdownEl.textContent=n; }
+    else{ clearCountdown(); startScreen.style.display='none'; startGame(); }
+  },1000);
+}
+
+  startBtn.addEventListener('click', ()=>{ runCountdown(); });
+})();
+
+// =========================
+// Visibility Pause
+// =========================
+let wasRunning=false;
+function uiBlockingOpen(){
+  const landing=document.getElementById('landing');
+  const startOpen = (document.getElementById('startScreen').style.display!=='none');
+  const guide=document.getElementById('guideScreen');
+  const guideOpen = getComputedStyle(guide).display!=='none';
+  const overlayOpen = overlay.style.visibility==='visible';
+  return overlayOpen || (!landing.classList.contains('hide')) || startOpen || guideOpen;
+}
+function handleHidden(){ wasRunning = running && !ended && !uiBlockingOpen(); if(wasRunning) { paused=true; pauseGameTimer(); } }
+function handleVisible(){ if(wasRunning && paused && !ended && !uiBlockingOpen()){ paused=false; resumeGameTimer(); } wasRunning=false }
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) handleHidden(); else handleVisible() });
+window.addEventListener('blur', handleHidden); window.addEventListener('focus', handleVisible);
+
+})();
+</script>
+
+<!-- ===== คำสั่งเสียง (คงไว้) ===== -->
+<script>
+(function(){
+  const micBtn = document.getElementById('micBtn'); if(!micBtn) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ micBtn.textContent='🎤 ไม่รองรับ'; micBtn.disabled=true; return }
+  const rec = new SR(); rec.lang='th-TH'; rec.continuous=true; rec.interimResults=true;
+  function tokensFrom(s){ s=(s||'').toLowerCase().trim(); s=s.replace(/\s*(ค่ะ|ครับ|คะ|ฮะ)$/,''); return s.split(/[\s,，。\.!?:;、]+/).filter(Boolean) }
+  function currentOptionsMap(){ const map=new Map(); document.querySelectorAll('.option').forEach(n=>{ const t=(n.getAttribute('alt')||n?.querySelector('img')?.alt||'').trim().toLowerCase(); if(!map.has(t)) map.set(t,[]); map.get(t).push(n) }); return map }
+  function pickNearest(arr){ return arr[0] }
+  function tryFire(phrase){ const toks=tokensFrom(phrase); if(!toks.length) return false; const cmap=currentOptionsMap(); for(const t of toks){ if(cmap.has(t)){ const node = pickNearest(cmap.get(t)); node?.click(); return true } } return false }
+  rec.onresult=(e)=>{ for(let i=e.resultIndex;i<e.results.length;i++){ const r=e.results[i]; const txt=(r[0]?.transcript||'').trim(); if(!txt) continue; tryFire(txt) } };
+})();
+</script>
+
+<!-- ===== กล้อง (มือเป็นวงกลมแตะเลือกช้อยส์) ===== -->
+<script type="module">
+import {PoseLandmarker, FilesetResolver} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3";
+const camBtn = document.getElementById('camBtn');
+const video  = document.getElementById('cameraMirror');
+const cvs    = document.getElementById('camCanvas');
+const ctx    = cvs.getContext('2d', { alpha: true });
+const DETECT_W = 320;
+let detectCanvas = document.createElement('canvas');
+let detectCtx = detectCanvas.getContext('2d', { alpha:false, desynchronized:true });
+let CAM_ON=false, landmarker=null, raf=0, stream=null;
+
+function fitCanvas(){ const dpr = CAM_ON? 1 : Math.max(1, window.devicePixelRatio||1); cvs.width=Math.round(innerWidth*dpr); cvs.height=Math.round(innerHeight*dpr); cvs.style.width=innerWidth+'px'; cvs.style.height=innerHeight+'px'; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr) }
+fitCanvas(); addEventListener('resize', fitCanvas);
+function coverCropRect(){ const vw=video.videoWidth||640, vh=video.videoHeight||480; const sw=innerWidth, sh=innerHeight; const scale=Math.max(sw/vw, sh/vh); const sW=Math.round(sw/scale), sH=Math.round(sh/scale); const sX=Math.round((vw-sW)/2), sY=Math.round((vh-sH)/2); return {sX,sY,sW,sH,vw,vh,sw,sh} }
+function mapToScreen(nx,ny){ const {sX,sY,sW,sH,vw,vh,sw,sh} = coverCropRect(); const px=nx*vw, py=ny*vh; const u=(px-sX)/sW, v=(py-sY)/sH; let x=u*sw, y=v*sh; x=sw-x; return {x,y} }
+
+const SHOW_HAND_BALL=false;
+const lastHitAt=new WeakMap();
+const HIT_LOCK_MS=160;
+function circleIntersectsRect(cx,cy,r, rc){ const nx=Math.max(rc.left, Math.min(cx, rc.right)); const ny=Math.max(rc.top, Math.min(cy, rc.bottom)); const dx=cx-nx, dy=cy-ny; return (dx*dx+dy*dy)<=r*r }
+function hitByCircle(center, r){
+  if (window.ended) return;
+const opts = [...document.querySelectorAll('.option.circle')];
+const extras = [];
+if (qDecor) extras.push(qDecor);
+const fastRect = document.getElementById('fastNext');
+if (fastRect) extras.push(fastRect);
+
+
+
+for (const n of [...opts, ...extras]){
+  const rc = n.getBoundingClientRect();
+
+if (circleIntersectsRect(center.x, center.y, r, rc)){
+  const t = performance.now();
+  const last = lastHitAt.get(n) || 0;
+  if (t - last < HIT_LOCK_MS) continue;
+  lastHitAt.set(n, t);
+
+  // ถ้าเป็น qDecor (object0) และกำลังรอให้ไปต่ออยู่ → สั่ง next โดยตรง
+  if (n === qDecor){
+    if (awaitingContinue && !ended) {
+      qDecor.click(); // จะเล่นเสียง belt และ nextRound() ตามที่เราผูกไว้
+    }
+    continue;
+  }
+
+  // ปุ่มตัวเลือกปกติ
+  (n).click();
+}
+  }
+}
+async function ensureLandmarker(){ if(landmarker) return landmarker; const fileset = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"); landmarker = await PoseLandmarker.createFromOptions(fileset, { baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task" }, runningMode:'VIDEO', numPoses:1, minPoseDetectionConfidence:.35, minPosePresenceConfidence:.35, minTrackingConfidence:.35 }); return landmarker }
+function drawHandBall(elbowIdx, wristIdx, lm){ if(!lm[elbowIdx]||!lm[wristIdx]) return null; const elbow = mapToScreen(lm[elbowIdx].x, lm[elbowIdx].y); const wrist = mapToScreen(lm[wristIdx].x, lm[wristIdx].y); const r=24; const L=Math.max(1, Math.hypot(wrist.x-elbow.x, wrist.y-elbow.y)); const ux=(wrist.x-elbow.x)/L, uy=(wrist.y-elbow.y)/L; const HAND_PUSH=1.5, PUSH_PX=6; const center={ x: wrist.x + ux*(r*HAND_PUSH+PUSH_PX), y: wrist.y + uy*(r*HAND_PUSH+PUSH_PX) }; if(SHOW_HAND_BALL){ ctx.beginPath(); ctx.arc(center.x,center.y,r,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#fff'; ctx.stroke(); } hitByCircle(center, r*.95); return center }
+function drawPoseAndColliders(res){ const sw=innerWidth, sh=innerHeight; ctx.clearRect(0,0,sw,sh); if(!res?.landmarks?.length) return; const lm=res.landmarks[0]; drawHandBall(13,15,lm); drawHandBall(14,16,lm) }
+function runLoop(){ const step=()=>{ if(!video.videoWidth){ raf=requestAnimationFrame(step); return } const now=performance.now(); try{ const {sX,sY,sW,sH}=coverCropRect(); detectCtx.drawImage(video, sX,sY,sW,sH, 0,0, detectCanvas.width, detectCanvas.height); const res=landmarker.detectForVideo(detectCanvas, now); drawPoseAndColliders(res) }catch(e){} raf=requestAnimationFrame(step) }; raf=requestAnimationFrame(step) }
+async function startCamera(){ await ensureLandmarker(); stream = await navigator.mediaDevices.getUserMedia({ video: { width: 960, height: 540, frameRate: 30, facingMode: 'user' }, audio: false }); video.srcObject=stream; await video.play().catch(()=>{}); const vw=video.videoWidth||640, vh=video.videoHeight||480; const ratio=vw/vh; detectCanvas.width=DETECT_W; detectCanvas.height=Math.round(DETECT_W/ratio); video.style.display='block'; cvs.style.display='block'; camBtn.textContent='📷 กล้อง: เปิด'; CAM_ON=true; fitCanvas(); runLoop() }
+function stopCamera(){ cancelAnimationFrame(raf); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null } try{ video.pause() }catch(e){} video.removeAttribute('srcObject'); video.style.display='none'; cvs.style.display='none'; ctx.clearRect(0,0,innerWidth,innerHeight); camBtn.textContent='📷 กล้อง: ปิด'; CAM_ON=false; fitCanvas() }
+camBtn.addEventListener('click', async ()=>{ if(!stream){ try{ await startCamera() }catch(err){ camBtn.textContent='📷 กล้อง: ไม่ได้รับอนุญาต'; camBtn.disabled=true } } else { stopCamera() } });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && stream) stopCamera() });
+</script>
+
+<!-- ===== Preload Overlay ===== -->
+<div id="preloadOverlay">
+  <div id="preloadText" style="font-size:20px">กำลังเตรียมข้อมูล… 0%</div>
+  <div style="width:min(80vw,480px); height:10px; background:#ffffff22; border-radius:999px; overflow:hidden">
+    <div id="preloadBar" style="height:100%; width:0%; background:#10b981"></div>
+  </div>
+  <div style="font-size:12px;opacity:.8">...รอสักครู่...</div>
+</div>
+<div id="flashOverlay" aria-hidden="true"></div>
+<div id="emojiBurst" aria-hidden="true"></div>
+</body>
+</html>
